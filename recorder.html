@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>API Recorder — Cert Keeper</title>
+<link rel="stylesheet" href="recorder.css">
+</head>
+<body>
+
+<header class="toolbar">
+  <div class="tb-left">
+    <h1>🎬 API Recorder</h1>
+    <span class="stats" id="stats">0 requests</span>
+  </div>
+  <div class="tb-right">
+    <button class="tb-btn tb-export" id="btnExport">📥 Export JSON</button>
+    <button class="tb-btn tb-skill" id="btnSkill">🧩 Generate Skill</button>
+    <button class="tb-btn tb-save" id="btnSave">💾 Save to Disk</button>
+    <button class="tb-btn tb-clear" id="btnClear">🗑</button>
+  </div>
+</header>
+
+<div class="filter-bar">
+  <input class="filter-input" id="filterInput" placeholder="🔍 搜索 URL …">
+  <div class="method-chips" id="methodChips">
+    <span class="chip active" data-m="ALL">ALL</span>
+    <span class="chip" data-m="GET">GET</span>
+    <span class="chip" data-m="POST">POST</span>
+    <span class="chip" data-m="PUT">PUT</span>
+    <span class="chip" data-m="DELETE">DEL</span>
+  </div>
+</div>
+
+<main class="content" id="content">
+  <div class="empty">
+    <div class="empty-icon">🎬</div>
+    <h3>暂无录制数据</h3>
+    <p>在 Cert Keeper 弹窗中点击 ● REC，然后操作页面</p>
+  </div>
+</main>
+
+<!-- Skill generation modal -->
+<div class="modal-overlay" id="skillModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>🧩 生成 Skill 模板</h2>
+      <button class="modal-close" id="skillModalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>Skill 名称</label>
+      <input id="skillName" value="api-workflow" placeholder="如: create-order-flow">
+      <label>描述</label>
+      <input id="skillDesc" placeholder="如: 创建订单的完整 API 链路">
+      <label>包含的 API 步骤 <small id="skillStepCount"></small></label>
+      <div class="skill-preview" id="skillPreview"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="tb-btn tb-export" id="btnSkillCopy">📋 复制 Markdown</button>
+      <button class="tb-btn tb-save" id="btnSkillDownload">📥 下载 .md</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script src="recorder.js"></script>
+</body>
+</html>

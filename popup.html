@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+:root {
+  --bg: #f5f5f7; --card: #fff; --border: #e5e5e7;
+  --text: #1d1d1f; --text2: #8e8e93;
+  --accent: #0071e3; --accent-dark: #004999;
+  --green: #30d158; --green-text: #137333;
+  --red: #ff453a; --red-bg: #fce8e6;
+  --orange: #ff9f0a; --orange-text: #a16207;
+  --r: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  width: 400px;
+  font-family: -apple-system, "SF Pro Text", system-ui, sans-serif;
+  font-size: 13px; color: var(--text); background: var(--bg);
+}
+
+/* ─── Header ─── */
+.header {
+  padding: 16px 20px 14px;
+  background: linear-gradient(150deg, #0071e3 0%, #004999 60%, #002855 100%);
+  color: #fff;
+}
+.header-row { display: flex; align-items: center; gap: 10px; }
+.header-icon {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: rgba(255,255,255,.15);
+  display: grid; place-items: center; font-size: 18px;
+}
+.header h3 { font-size: 15px; font-weight: 700; letter-spacing: -.2px; }
+.header small { opacity: .65; font-size: 11px; }
+.sync-hint {
+  margin-top: 8px; font-size: 10px; opacity: .55;
+  display: flex; align-items: center; gap: 4px;
+}
+
+/* ─── Actions ─── */
+.actions {
+  display: flex; gap: 8px;
+  padding: 10px 16px;
+  background: var(--card); border-bottom: 1px solid var(--border);
+}
+.btn {
+  flex: 1; padding: 8px 12px; border: none; border-radius: 8px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: all .15s ease;
+}
+.btn-primary {
+  background: var(--accent); color: #fff;
+  box-shadow: 0 1px 4px rgba(0,113,227,.3);
+}
+.btn-primary:hover { background: var(--accent-dark); }
+.btn-secondary {
+  background: var(--bg); color: #666;
+  border: 1px dashed #c7c7cc;
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ─── Sites ─── */
+.sites { padding: 6px 16px; max-height: 250px; overflow-y: auto; }
+.site {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 10px 12px; margin-bottom: 6px;
+  transition: all .2s;
+}
+.site:hover { box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+.site-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.site-name {
+  font-weight: 600; font-size: 12px;
+  display: flex; align-items: center; gap: 6px;
+}
+.site-icon {
+  width: 20px; height: 20px; border-radius: 5px;
+  display: grid; place-items: center; font-size: 11px; flex-shrink: 0;
+}
+.site-icon.ds { background: #e8f0fe; } .site-icon.wms { background: #fef7e0; }
+.site-icon.sp { background: #e6f4ea; } .site-icon.default { background: #f3e8fd; }
+.site-del {
+  cursor: pointer; color: #c7c7cc; font-size: 11px;
+  width: 20px; height: 20px; border-radius: 5px;
+  display: grid; place-items: center;
+  transition: all .15s;
+}
+.site-del:hover { color: var(--red); background: #fff2f0; }
+.site-url {
+  font-size: 10px; color: var(--text2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 6px;
+}
+.badges { display: flex; gap: 4px; flex-wrap: wrap; }
+.badge {
+  font-size: 9px; padding: 2px 7px; border-radius: 4px;
+  font-weight: 600; letter-spacing: .2px;
+}
+.badge-ck { background: #e8f0fe; color: #1967d2; }
+.badge-ls { background: #fef7e0; color: var(--orange-text); }
+.site-status {
+  font-size: 11px; margin-top: 6px; padding: 5px 8px;
+  border-radius: 6px; display: none;
+}
+.site-status.show { display: block; }
+.site-status.ok { background: #e6f4ea; color: var(--green-text); display: block; }
+.site-status.warn { background: #fef7e0; color: var(--orange-text); display: block; }
+.site-status.err { background: var(--red-bg); color: #c5221f; display: block; }
+.site-status.loading { background: #f0f4ff; color: #1967d2; display: block; }
+
+/* ─── Global Status ─── */
+#status {
+  margin: 0 16px 6px; padding: 8px 12px; border-radius: 8px;
+  font-size: 12px; font-weight: 500; display: none;
+  animation: slideIn .25s ease;
+}
+@keyframes slideIn { from { opacity: 0; transform: translateY(-4px); } }
+.status-ok { background: #e6f4ea; color: var(--green-text); display: block !important; }
+.status-err { background: var(--red-bg); color: #c5221f; display: block !important; }
+
+/* ─── Add Form ─── */
+.add-form { padding: 0 16px 6px; display: none; animation: slideIn .2s ease; }
+.add-form.show { display: block; }
+.form-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 12px;
+}
+.add-form input {
+  width: 100%; padding: 7px 10px;
+  border: 1px solid var(--border); border-radius: 7px;
+  font-size: 12px; margin-bottom: 6px; outline: none;
+  transition: border-color .2s;
+}
+.add-form input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,113,227,.08); }
+.add-form label { font-size: 10px; color: var(--text2); display: block; margin-bottom: 2px; font-weight: 600; }
+.ck-row {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 12px;
+}
+.ck-row input[type="checkbox"] { width: auto; margin: 0; accent-color: var(--accent); }
+.ck-row label { margin: 0; }
+.form-btns { display: flex; gap: 6px; margin-top: 4px; }
+.form-btns .btn { padding: 7px; }
+.btn-flat { background: var(--bg); color: #666; border: none; }
+.btn-flat:hover { background: #e5e5e7; }
+
+/* ─── Recorder Section ─── */
+.divider { margin: 0 16px; border: none; border-top: 1px solid var(--border); }
+.recorder { padding: 10px 16px 14px; }
+.rec-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+}
+.rec-title { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+.rec-btns { display: flex; gap: 6px; }
+.btn-rec {
+  padding: 5px 14px; border: none; border-radius: 7px;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; gap: 3px;
+  transition: all .15s;
+}
+.btn-rec-start { background: var(--red); color: #fff; }
+.btn-rec-start:hover { background: #d62d23; }
+.btn-rec-start.on { animation: pulse 1.5s infinite; }
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,69,58,.5); }
+  50% { box-shadow: 0 0 0 6px rgba(255,69,58,0); }
+}
+.btn-rec-view { background: var(--bg); color: #555; border: 1px solid var(--border); }
+.btn-rec-view:hover { background: #eee; }
+
+.rec-bar {
+  font-size: 11px; padding: 6px 10px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 7px;
+  display: none;
+  align-items: center; gap: 8px;
+}
+.rec-bar.show { display: flex; }
+.rec-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--red); flex-shrink: 0;
+}
+.rec-dot.idle { background: var(--text2); }
+.rec-dot.on { animation: blink 1s infinite; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+.rec-count {
+  margin-left: auto;
+  padding: 1px 8px; border-radius: 10px;
+  font-weight: 700; font-size: 11px;
+  background: var(--red); color: #fff;
+}
+.rec-count.idle { background: var(--text2); }
+
+/* ─── Scrollbar ─── */
+.sites::-webkit-scrollbar { width: 3px; }
+.sites::-webkit-scrollbar-thumb { background: #d1d1d6; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-row">
+    <div class="header-icon">🔐</div>
+    <div>
+      <h3>Cert Keeper</h3>
+      <small>凭证管理 · API 录制</small>
+    </div>
+  </div>
+  <div class="sync-hint" id="autoSyncHint">⏰ 工作时段每 30 分钟自动同步</div>
+</div>
+
+<div class="actions">
+  <button class="btn btn-primary" id="btnSync">⬆ 一键同步</button>
+  <button class="btn btn-secondary" id="btnToggleAdd">+ 添加站点</button>
+</div>
+
+<div class="add-form" id="addForm">
+  <div class="form-card">
+    <label>站点名称</label>
+    <input id="addName" placeholder="如: my-service">
+    <label>URL</label>
+    <input id="addUrl" placeholder="https://example.shopee.io">
+    <div class="ck-row">
+      <input type="checkbox" id="addCookies" checked><label for="addCookies">Cookies</label>
+    </div>
+    <div class="ck-row">
+      <input type="checkbox" id="addLs"><label for="addLs">localStorage</label>
+    </div>
+    <label>localStorage keys (逗号分隔)</label>
+    <input id="addLsKeys" placeholder="session, token" disabled>
+    <div class="form-btns">
+      <button class="btn btn-primary" id="btnAddSave">保存</button>
+      <button class="btn btn-flat" id="btnAddCancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<div class="sites" id="siteList"></div>
+<div id="status"></div>
+
+<hr class="divider">
+
+<div class="recorder">
+  <div class="rec-header">
+    <span class="rec-title">🎬 API 录制</span>
+    <div class="rec-btns">
+      <button class="btn-rec btn-rec-start" id="btnRecord">● REC</button>
+      <button class="btn-rec btn-rec-view" id="btnViewRec">查看录制</button>
+    </div>
+  </div>
+  <div class="rec-bar" id="recBar">
+    <span class="rec-dot" id="recDot"></span>
+    <span id="recLabel">就绪</span>
+    <span class="rec-count idle" id="recCount">0</span>
+  </div>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
