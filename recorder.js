@@ -23,8 +23,22 @@ async function load() {
 // Helpers
 // ───────────────────────────────────────────────────────────────
 
-const esc = (s) => s ? s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;") : "";
-const safeUrl = (s) => { try { return new URL(s); } catch (_) { return null; } };
+const esc = (s) =>
+  s
+    ? s
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+    : "";
+
+const safeUrl = (s) => {
+  try {
+    return new URL(s);
+  } catch (_) {
+    return null;
+  }
+};
 
 function scCls(c) {
   if (!c) return "sc-0";
@@ -37,19 +51,31 @@ function fmtMs(ms) {
 }
 
 function fmtTime(ts) {
-  return ts ? new Date(ts).toLocaleTimeString("zh-CN", { hour12: false }) : "";
+  return ts
+    ? new Date(ts).toLocaleTimeString("zh-CN", { hour12: false })
+    : "";
 }
 
 function prettyJson(s) {
   if (!s) return s;
-  try { return JSON.stringify(JSON.parse(s), null, 2); } catch (_) { return s; }
+  try {
+    return JSON.stringify(JSON.parse(s), null, 2);
+  } catch (_) {
+    return s;
+  }
 }
 
-function headersTable(h) {
-  if (!h?.length) return '<span style="color:var(--text2)">（无）</span>';
-  return `<table class="htable"><thead><tr><th>Name</th><th>Value</th></tr></thead><tbody>${
-    h.map((x) => `<tr><td class="hn">${esc(x.name)}</td><td>${esc(x.value || "")}</td></tr>`).join("")
-  }</tbody></table>`;
+function headersHtml(h) {
+  if (!h?.length)
+    return '<div class="no-data">（无 headers 数据）</div>';
+  return `<table class="htable"><thead><tr><th>Name</th><th>Value</th></tr></thead><tbody>${h
+    .map(
+      (x) =>
+        `<tr><td class="hn">${esc(x.name)}</td><td>${esc(
+          x.value || ""
+        )}</td></tr>`
+    )
+    .join("")}</tbody></table>`;
 }
 
 function filtered() {
@@ -61,30 +87,38 @@ function filtered() {
 }
 
 // ───────────────────────────────────────────────────────────────
-// Render
+// Render — NO inline onclick (CSP-safe for MV3 extension pages)
 // ───────────────────────────────────────────────────────────────
 
 function render() {
   const list = filtered();
-  document.getElementById("stats").textContent = `${list.length} / ${requests.length} requests`;
+  document.getElementById("stats").textContent =
+    `${list.length} / ${requests.length} requests`;
   const el = document.getElementById("content");
 
   if (!list.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">${requests.length ? "🔍" : "🎬"}</div>
+    el.innerHTML = `<div class="empty"><div class="empty-icon">${
+      requests.length ? "🔍" : "🎬"
+    }</div>
       <h3>${requests.length ? "无匹配" : "暂无录制"}</h3>
-      <p>${requests.length ? "调整过滤条件" : "在弹窗中点击 ● REC 开始录制"}</p></div>`;
+      <p>${
+        requests.length
+          ? "调整过滤条件"
+          : "在 Cert Keeper 弹窗中点击 ● REC 开始录制"
+      }</p></div>`;
     return;
   }
 
-  el.innerHTML = list.map((r, i) => {
-    const idx = requests.indexOf(r);
-    const u = safeUrl(r.url);
-    const path = u ? u.pathname + u.search : r.url;
-    const body = prettyJson(r.requestBody);
+  el.innerHTML = list
+    .map((r, i) => {
+      const idx = requests.indexOf(r);
+      const u = safeUrl(r.url);
+      const path = u ? u.pathname + u.search : r.url;
+      const body = prettyJson(r.requestBody);
 
-    return `<div class="card" id="c${idx}">
-      <div class="card-summary" onclick="toggle(${idx})">
-        <span class="seq">${i + 1}</span>
+      return `<div class="card" id="c${idx}" data-idx="${idx}">
+      <div class="card-summary" data-action="toggle" data-idx="${idx}">
+        <span class="seq">#${i + 1}</span>
         <span class="mtd mtd-${r.method}">${r.method}</span>
         <span class="url" title="${esc(r.url)}">${esc(path)}</span>
         <span class="sc ${scCls(r.statusCode)}">${r.statusCode || "ERR"}</span>
@@ -92,68 +126,135 @@ function render() {
       </div>
       <div class="card-detail">
         <div class="tabs">
-          <div class="tab active" onclick="tab(${idx},0)">General</div>
-          <div class="tab" onclick="tab(${idx},1)">Req Headers</div>
-          <div class="tab" onclick="tab(${idx},2)">Body</div>
-          <div class="tab" onclick="tab(${idx},3)">Res Headers</div>
+          <div class="tab active" data-action="tab" data-idx="${idx}" data-tab="0">General</div>
+          <div class="tab" data-action="tab" data-idx="${idx}" data-tab="1">Request Headers (${
+        r.requestHeaders?.length || 0
+      })</div>
+          <div class="tab" data-action="tab" data-idx="${idx}" data-tab="2">Body</div>
+          <div class="tab" data-action="tab" data-idx="${idx}" data-tab="3">Response Headers (${
+        r.responseHeaders?.length || 0
+      })</div>
         </div>
         <div class="pane active">
-          <div class="fg"><div class="fl">Method</div><input class="fv" data-i="${idx}" data-f="method" value="${esc(r.method)}"></div>
-          <div class="fg"><div class="fl">URL</div><input class="fv" data-i="${idx}" data-f="url" value="${esc(r.url)}"></div>
-          <div class="fg"><div class="fl">Status</div><div class="fv">${r.statusCode || "Error"} ${r.statusLine || ""}</div></div>
-          <div class="fg"><div class="fl">Time</div><div class="fv">${fmtTime(r.timestamp)} · ${fmtMs(r.duration)}</div></div>
+          <div class="fg"><div class="fl">Method</div><input class="fv" data-i="${idx}" data-f="method" value="${esc(
+        r.method
+      )}"></div>
+          <div class="fg"><div class="fl">URL</div><input class="fv" data-i="${idx}" data-f="url" value="${esc(
+        r.url
+      )}"></div>
+          <div class="fg"><div class="fl">Status</div><div class="fv">${
+        r.statusCode || "Error"
+      } ${r.statusLine || ""}</div></div>
+          <div class="fg"><div class="fl">Timing</div><div class="fv">${fmtTime(
+        r.timestamp
+      )} · ${fmtMs(r.duration)}</div></div>
+          ${
+            r.error
+              ? `<div class="fg"><div class="fl">Error</div><div class="fv fv-err">${esc(
+                  r.error
+                )}</div></div>`
+              : ""
+          }
         </div>
-        <div class="pane">${headersTable(r.requestHeaders)}</div>
+        <div class="pane">${headersHtml(r.requestHeaders)}</div>
         <div class="pane">
           <div class="fg"><div class="fl">Request Body</div>
-            <textarea class="fv" data-i="${idx}" data-f="requestBody" rows="6">${esc(body || "")}</textarea>
+            <textarea class="fv fv-body" data-i="${idx}" data-f="requestBody" rows="8">${esc(
+        body || ""
+      )}</textarea>
           </div>
         </div>
-        <div class="pane">${headersTable(r.responseHeaders)}</div>
+        <div class="pane">${headersHtml(r.responseHeaders)}</div>
         <div class="card-actions">
-          <button class="abtn" onclick="curl(${idx})">📋 cURL</button>
-          <button class="abtn abtn-primary" onclick="save(${idx})">💾 应用编辑</button>
+          <button class="abtn" data-action="curl" data-idx="${idx}">📋 Copy cURL</button>
+          <button class="abtn" data-action="copyJson" data-idx="${idx}">📄 Copy JSON</button>
+          <button class="abtn abtn-primary" data-action="apply" data-idx="${idx}">💾 应用编辑</button>
         </div>
       </div>
     </div>`;
-  }).join("");
+    })
+    .join("");
 }
 
 // ───────────────────────────────────────────────────────────────
-// Card Interactions
+// Event Delegation — single listener for all card interactions
 // ───────────────────────────────────────────────────────────────
 
-window.toggle = (i) => document.getElementById(`c${i}`)?.classList.toggle("open");
+document.getElementById("content").addEventListener("click", (e) => {
+  const target = e.target.closest("[data-action]");
+  if (!target) return;
+  const action = target.dataset.action;
+  const idx = parseInt(target.dataset.idx);
 
-window.tab = (i, n) => {
-  const card = document.getElementById(`c${i}`);
-  if (!card) return;
-  card.querySelectorAll(".tab").forEach((t, j) => t.classList.toggle("active", j === n));
-  card.querySelectorAll(".pane").forEach((p, j) => p.classList.toggle("active", j === n));
-};
+  switch (action) {
+    case "toggle": {
+      const card = document.getElementById(`c${idx}`);
+      card?.classList.toggle("open");
+      break;
+    }
+    case "tab": {
+      const n = parseInt(target.dataset.tab);
+      const card = document.getElementById(`c${idx}`);
+      if (!card) break;
+      card
+        .querySelectorAll(".tab")
+        .forEach((t, j) => t.classList.toggle("active", j === n));
+      card
+        .querySelectorAll(".pane")
+        .forEach((p, j) => p.classList.toggle("active", j === n));
+      break;
+    }
+    case "curl": {
+      copyCurl(idx);
+      break;
+    }
+    case "copyJson": {
+      const r = requests[idx];
+      const obj = {
+        method: r.method,
+        url: r.url,
+        statusCode: r.statusCode,
+        headers: r.requestHeaders?.reduce(
+          (o, h) => {
+            o[h.name] = h.value;
+            return o;
+          },
+          {}
+        ),
+        body: tryParse(r.requestBody),
+      };
+      navigator.clipboard.writeText(JSON.stringify(obj, null, 2));
+      toast("📄 JSON copied");
+      break;
+    }
+    case "apply": {
+      const card = document.getElementById(`c${idx}`);
+      if (!card) break;
+      card.querySelectorAll("[data-f]").forEach((el) => {
+        requests[idx][el.dataset.f] = el.value;
+      });
+      toast("✅ 已应用编辑");
+      break;
+    }
+  }
+});
 
-window.save = (i) => {
-  const card = document.getElementById(`c${i}`);
-  if (!card) return;
-  card.querySelectorAll("[data-f]").forEach((el) => {
-    requests[i][el.dataset.f] = el.value;
-  });
-  toast("✅ 已应用");
-};
-
-window.curl = (i) => {
-  const r = requests[i];
+function copyCurl(idx) {
+  const r = requests[idx];
   let c = `curl '${r.url}'`;
   if (r.method !== "GET") c += ` \\\n  -X ${r.method}`;
   (r.requestHeaders || []).forEach((h) => {
-    if (!["host", "content-length", "accept-encoding"].includes(h.name.toLowerCase())) {
+    const name = h.name.toLowerCase();
+    if (!["host", "content-length", "accept-encoding"].includes(name)) {
       c += ` \\\n  -H '${h.name}: ${(h.value || "").replace(/'/g, "'\\''")}'`;
     }
   });
-  if (r.requestBody) c += ` \\\n  --data-raw '${r.requestBody.replace(/'/g, "'\\''")}'`;
+  if (r.requestBody) {
+    c += ` \\\n  --data-raw '${r.requestBody.replace(/'/g, "'\\''")}'`;
+  }
   navigator.clipboard.writeText(c);
   toast("📋 cURL copied");
-};
+}
 
 // ───────────────────────────────────────────────────────────────
 // Filter
@@ -179,19 +280,38 @@ document.getElementById("methodChips").addEventListener("click", (e) => {
 
 function exportData() {
   return filtered().map((r) => ({
-    method: r.method, url: r.url, statusCode: r.statusCode,
-    duration: r.duration, timestamp: r.timestamp,
-    requestHeaders: r.requestHeaders?.reduce((o, h) => { o[h.name] = h.value; return o; }, {}),
+    method: r.method,
+    url: r.url,
+    statusCode: r.statusCode,
+    duration: r.duration,
+    timestamp: r.timestamp,
+    requestHeaders: r.requestHeaders?.map((h) => ({
+      name: h.name,
+      value: h.value,
+    })),
     requestBody: tryParse(r.requestBody),
-    responseHeaders: r.responseHeaders?.reduce((o, h) => { o[h.name] = h.value; return o; }, {}),
+    responseHeaders: r.responseHeaders?.map((h) => ({
+      name: h.name,
+      value: h.value,
+    })),
   }));
 }
 
-function tryParse(s) { try { return JSON.parse(s); } catch (_) { return s || null; } }
+function tryParse(s) {
+  try {
+    return JSON.parse(s);
+  } catch (_) {
+    return s || null;
+  }
+}
 
 document.getElementById("btnExport").addEventListener("click", () => {
   const d = exportData();
-  download(`api-recording-${ts()}.json`, JSON.stringify(d, null, 2), "application/json");
+  download(
+    `api-recording-${ts()}.json`,
+    JSON.stringify(d, null, 2),
+    "application/json"
+  );
   toast(`📥 已导出 ${d.length} 条`);
 });
 
@@ -199,12 +319,19 @@ document.getElementById("btnSave").addEventListener("click", async () => {
   const d = exportData();
   try {
     const r = await fetch(`${SERVER_URL}/save-recording`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ requests: d }),
     });
-    if (r.ok) { const j = await r.json(); toast(`💾 ${j.path}`); }
-    else toast(`❌ ${r.status}`);
-  } catch (_) { toast("❌ 服务未运行"); }
+    if (r.ok) {
+      const j = await r.json();
+      toast(`💾 已保存 → ${j.path}`);
+    } else {
+      toast(`❌ 保存失败: ${r.status}`);
+    }
+  } catch (_) {
+    toast("❌ 本地服务未运行");
+  }
 });
 
 document.getElementById("btnClear").addEventListener("click", () => {
@@ -216,7 +343,7 @@ document.getElementById("btnClear").addEventListener("click", () => {
 });
 
 // ───────────────────────────────────────────────────────────────
-// Skill Generation — converts API chain to Cursor Skill template
+// Skill Generation
 // ───────────────────────────────────────────────────────────────
 
 document.getElementById("btnSkill").addEventListener("click", () => {
@@ -232,19 +359,27 @@ document.getElementById("skillModalClose").addEventListener("click", () => {
 });
 
 document.getElementById("btnSkillCopy").addEventListener("click", () => {
-  navigator.clipboard.writeText(document.getElementById("skillPreview").textContent);
-  toast("📋 已复制 Markdown");
+  navigator.clipboard.writeText(
+    document.getElementById("skillPreview").textContent
+  );
+  toast("📋 Markdown 已复制");
 });
 
 document.getElementById("btnSkillDownload").addEventListener("click", () => {
   const name = document.getElementById("skillName").value || "api-workflow";
-  download(`${name}.md`, document.getElementById("skillPreview").textContent, "text/markdown");
-  toast("📥 已下载");
+  download(
+    `${name}.md`,
+    document.getElementById("skillPreview").textContent,
+    "text/markdown"
+  );
+  toast("📥 已下载 .md");
 });
 
 function generateSkillMd(list) {
   const name = document.getElementById("skillName").value || "api-workflow";
-  const desc = document.getElementById("skillDesc").value || "从 API 录制自动生成的 Skill";
+  const desc =
+    document.getElementById("skillDesc").value ||
+    "从 API 录制自动生成的 Skill";
   const host = safeUrl(list[0]?.url)?.origin || "https://example.com";
 
   let md = `# Skill: ${name}\n\n${desc}\n\n`;
@@ -255,20 +390,29 @@ function generateSkillMd(list) {
     const u = safeUrl(r.url);
     const path = u ? u.pathname : r.url;
     md += `### Step ${i + 1}: ${r.method} ${path}\n\n`;
-    md += `- **Method**: \`${r.method}\`\n`;
-    md += `- **URL**: \`${r.url}\`\n`;
-    md += `- **Status**: ${r.statusCode || "N/A"}\n`;
-    md += `- **Duration**: ${fmtMs(r.duration)}\n\n`;
+    md += `| Field | Value |\n|-------|-------|\n`;
+    md += `| Method | \`${r.method}\` |\n`;
+    md += `| URL | \`${r.url}\` |\n`;
+    md += `| Status | ${r.statusCode || "N/A"} |\n`;
+    md += `| Duration | ${fmtMs(r.duration)} |\n\n`;
 
     if (r.requestHeaders?.length) {
       const important = r.requestHeaders.filter((h) =>
-        ["content-type", "authorization", "cookie", "x-"].some((p) =>
-          h.name.toLowerCase().startsWith(p) || h.name.toLowerCase() === p
+        [
+          "content-type",
+          "authorization",
+          "cookie",
+          "accept",
+          "x-",
+        ].some(
+          (p) =>
+            h.name.toLowerCase().startsWith(p) ||
+            h.name.toLowerCase() === p
         )
       );
       if (important.length) {
         md += "**Key Headers**:\n```\n";
-        important.forEach((h) => { md += `${h.name}: ${h.value}\n`; });
+        important.forEach((h) => (md += `${h.name}: ${h.value}\n`));
         md += "```\n\n";
       }
     }
@@ -282,13 +426,17 @@ function generateSkillMd(list) {
     md += "---\n\n";
   });
 
-  md += `## Usage\n\n`;
-  md += "```bash\n";
+  md += `## cURL Commands\n\n\`\`\`bash\n`;
   list.forEach((r, i) => {
-    md += `# Step ${i + 1}: ${r.method} ${safeUrl(r.url)?.pathname || r.url}\n`;
+    md += `# Step ${i + 1}: ${r.method} ${
+      safeUrl(r.url)?.pathname || r.url
+    }\n`;
     md += `curl '${r.url}'`;
     if (r.method !== "GET") md += ` -X ${r.method}`;
-    if (r.requestBody) md += ` \\\n  -d '${r.requestBody.replace(/'/g, "'\\''").substring(0, 200)}${r.requestBody.length > 200 ? "..." : ""}'`;
+    if (r.requestBody) {
+      const b = r.requestBody.replace(/'/g, "'\\''");
+      md += ` \\\n  -d '${b.substring(0, 200)}${b.length > 200 ? "..." : ""}'`;
+    }
     md += "\n\n";
   });
   md += "```\n";
