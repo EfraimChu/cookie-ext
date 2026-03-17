@@ -178,18 +178,22 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   switch (msg.action) {
     case "startRecording":
       rec = { active: true, tabId: msg.tabId, pending: {}, done: [] };
-      saveRecState().then(() => sendResponse({ ok: true }));
+      saveRecState()
+        .then(() => sendResponse({ ok: true }))
+        .catch((e) => sendResponse({ ok: false, error: e.message }));
       return true;
 
-    case "stopRecording":
+    case "stopRecording": {
       rec.active = false;
-      const stoppedRequests = [...rec.done];
-      chrome.storage.local.set({ lastRecording: stoppedRequests }).then(() => {
-        saveRecState().then(() =>
-          sendResponse({ ok: true, count: stoppedRequests.length })
-        );
-      });
+      const stopped = [...rec.done];
+      Promise.all([
+        chrome.storage.local.set({ lastRecording: stopped }),
+        saveRecState(),
+      ])
+        .then(() => sendResponse({ ok: true, count: stopped.length }))
+        .catch((e) => sendResponse({ ok: false, count: stopped.length, error: e.message }));
       return true;
+    }
 
     case "getRecordingState":
       sendResponse({ active: rec.active, tabId: rec.tabId, count: rec.done.length });

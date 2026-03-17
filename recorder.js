@@ -310,11 +310,12 @@ function toast(msg) {
 
 function download(name, content, type) {
   const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
+  a.href = url;
   a.download = name;
   a.click();
-  URL.revokeObjectURL(a.href);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function ts() {

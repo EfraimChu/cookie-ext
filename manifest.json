@@ -13,8 +13,7 @@
     "webRequest"
   ],
   "host_permissions": [
-    "https://*/*",
-    "http://localhost/*"
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "background.js"

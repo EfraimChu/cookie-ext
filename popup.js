@@ -257,15 +257,26 @@ btnRecord.addEventListener("click", async () => {
     const state = await chrome.runtime.sendMessage({ action: "getRecordingState" });
     if (state.active) {
       const result = await chrome.runtime.sendMessage({ action: "stopRecording" });
-      setRecUI(false, result.count);
+      if (result?.ok) {
+        setRecUI(false, result.count);
+      } else {
+        recLabel.textContent = "⚠ 停止失败";
+      }
     } else {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab?.id) return;
-      await chrome.runtime.sendMessage({ action: "startRecording", tabId: tab.id });
-      setRecUI(true, 0);
+      if (!tab?.id) { recLabel.textContent = "⚠ 无活动标签"; return; }
+      const result = await chrome.runtime.sendMessage({ action: "startRecording", tabId: tab.id });
+      if (result?.ok) {
+        setRecUI(true, 0);
+      } else {
+        recBar.classList.add("show");
+        recLabel.textContent = "⚠ 启动失败";
+      }
     }
   } catch (e) {
-    console.error("REC error:", e);
+    recBar.classList.add("show");
+    recDot.classList.add("idle");
+    recLabel.textContent = "⚠ 通信失败，请重新加载扩展";
   }
 });
 
