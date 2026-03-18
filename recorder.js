@@ -226,7 +226,7 @@ function renderCard(r, i, idx, headerCount) {
       <div class="pane">${headersHtml(r.responseHeaders)}</div>
       <div class="pane">
         ${r.responseBody
-          ? `<div class="fg"><div class="fl">Response Body</div><pre class="fv fv-body resp-body">${esc(prettyJson(r.responseBody))}</pre></div>`
+          ? `<div class="fg"><div class="fl">Response Body</div><pre class="fv fv-body resp-body jhl">${highlightJson(prettyJson(r.responseBody))}</pre></div>`
           : `<div class="resp-fetch-box"><p>Response Body 未录制</p><button class="abtn abtn-primary" data-action="fetchResp" data-idx="${idx}">🔄 重新发送并获取 Response</button></div>`
         }
       </div>
@@ -453,7 +453,7 @@ async function fetchResponse(idx, btn) {
         const panes = card.querySelectorAll(".pane");
         const respPane = panes[4];
         if (respPane) {
-          respPane.innerHTML = `<div class="fg"><div class="fl">Response Body (${resp.status})</div><pre class="fv fv-body resp-body">${esc(prettyJson(resp.body))}</pre></div>`;
+          respPane.innerHTML = `<div class="fg"><div class="fl">Response Body (${resp.status})</div><pre class="fv fv-body resp-body jhl">${highlightJson(prettyJson(resp.body))}</pre></div>`;
         }
       }
       toast(`✅ 获取到 Response (${resp.status})`);
@@ -676,6 +676,85 @@ function generateSkillMd(list) {
 }
 
 // ───────────────────────────────────────────────────────────────
+// JSON Syntax Highlighting
+// ───────────────────────────────────────────────────────────────
+
+function highlightJson(str) {
+  if (!str) return "";
+  const e = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return e(str).replace(
+    /("(?:\\.|[^"\\])*")\s*:/g,
+    '<span class="jk">$1</span>:'
+  ).replace(
+    /:\s*("(?:\\.|[^"\\])*")/g,
+    ': <span class="js">$1</span>'
+  ).replace(
+    /:\s*(\d+\.?\d*)\b/g,
+    ': <span class="jn">$1</span>'
+  ).replace(
+    /:\s*(true|false)\b/g,
+    ': <span class="jb">$1</span>'
+  ).replace(
+    /:\s*(null)\b/g,
+    ': <span class="jnull">$1</span>'
+  );
+}
+
+// ───────────────────────────────────────────────────────────────
+// Dark Mode
+// ───────────────────────────────────────────────────────────────
+
+function initTheme() {
+  const saved = localStorage.getItem("theme");
+  if (saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+    document.body.classList.add("dark");
+    const btn = document.getElementById("btnTheme");
+    if (btn) btn.textContent = "☀️";
+  }
+}
+
+document.getElementById("btnTheme").addEventListener("click", () => {
+  const isDark = document.body.classList.toggle("dark");
+  localStorage.setItem("theme", isDark ? "dark" : "light");
+  document.getElementById("btnTheme").textContent = isDark ? "☀️" : "🌙";
+});
+
+// ───────────────────────────────────────────────────────────────
+// Keyboard Shortcuts
+// ───────────────────────────────────────────────────────────────
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    const modal = document.getElementById("skillModal");
+    if (modal.classList.contains("show")) {
+      modal.classList.remove("show");
+      return;
+    }
+    if (selected.size) { selected.clear(); render(); return; }
+  }
+
+  if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+    e.preventDefault();
+    const list = filtered();
+    list.forEach((r) => selected.add(requests.indexOf(r)));
+    render();
+  }
+
+  if ((e.key === "Delete" || e.key === "Backspace") && selected.size) {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+    e.preventDefault();
+    if (!confirm(`删除选中的 ${selected.size} 条请求？`)) return;
+    const toRemove = [...selected].sort((a, b) => b - a);
+    toRemove.forEach((idx) => requests.splice(idx, 1));
+    selected.clear();
+    renderDomainChips();
+    render();
+    toast(`🗑 已删除 ${toRemove.length} 条`);
+  }
+});
+
+// ───────────────────────────────────────────────────────────────
 // Utils
 // ───────────────────────────────────────────────────────────────
 
@@ -701,4 +780,5 @@ function ts() { return new Date().toISOString().slice(0, 19).replace(/[T:]/g, "-
 // Init
 // ───────────────────────────────────────────────────────────────
 
+initTheme();
 load();

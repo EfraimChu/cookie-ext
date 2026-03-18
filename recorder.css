@@ -305,6 +305,56 @@ input.fv:focus, textarea.fv:focus {
 .modal-status.ok small { display: block; margin-top: 4px; color: var(--text2); }
 .modal-status.err { display: block; background: #fce8e6; color: var(--red); }
 
+/* ─── JSON Syntax Highlighting ─── */
+.jhl { color: var(--text); }
+.jk { color: #0550ae; }
+.js { color: #0a3069; }
+.jn { color: #0550ae; font-weight: 600; }
+.jb { color: #cf222e; }
+.jnull { color: var(--text2); font-style: italic; }
+
+/* ─── Dark Mode ─── */
+.tb-theme {
+  background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.2);
+  font-size: 14px; padding: 4px 8px; min-width: 32px;
+}
+.tb-theme:hover { background: rgba(255,255,255,.2); }
+
+body.dark {
+  --bg: #1a1a1e; --card: #242428; --border: #3a3a3e; --border2: #2e2e32;
+  --text: #e5e5ea; --text2: #8e8e93; --accent: #4da3ff; --accent2: #7cc0ff;
+  --green: #32d74b; --red: #ff453a; --orange: #ff9f0a;
+}
+body.dark .toolbar { background: linear-gradient(150deg, #1c3a5e, #0d1b2a); }
+body.dark .card-summary:hover { background: #2a2a2e; }
+body.dark .filter-input { background: var(--card); color: var(--text); }
+body.dark .chip { background: #2a2a2e; }
+body.dark .dchip { background: #2a2a2e; }
+body.dark .gchip { background: #2a2a2e; }
+body.dark .gchip.active { background: #e5e5ea; color: #1a1a1e; border-color: #e5e5ea; }
+body.dark .pane { background: #1e1e22; }
+body.dark input.fv, body.dark textarea.fv { background: #2a2a2e; color: var(--text); }
+body.dark .htable td { border-bottom-color: var(--border2); }
+body.dark .htable th { background: var(--card); }
+body.dark .modal { background: var(--card); }
+body.dark .modal-body input, body.dark .modal-body textarea {
+  background: #1e1e22; color: var(--text); border-color: var(--border);
+}
+body.dark .skill-preview { background: #111114; }
+body.dark .batch-bar { background: #2a1a1a; border-color: #5a2a2a; }
+body.dark .tb-export { background: var(--card); color: var(--accent); }
+body.dark .abtn { background: var(--card); color: var(--text); border-color: var(--border); }
+body.dark .abtn:hover { background: #2e3a4a; }
+body.dark .toast { background: #3a3a3e; }
+body.dark .group-header { background: #1e2a3a; }
+body.dark .resp-fetch-box { color: var(--text2); }
+
+body.dark .jk { color: #79c0ff; }
+body.dark .js { color: #a5d6ff; }
+body.dark .jn { color: #79c0ff; font-weight: 600; }
+body.dark .jb { color: #ff7b72; }
+body.dark .jnull { color: #8b949e; }
+
 /* ─── Toast ─── */
 #toastContainer { position: fixed; bottom: 20px; right: 20px; z-index: 200; }
 .toast {
