@@ -59,6 +59,20 @@ function renderSites() {
       renderSites();
     })
   );
+
+  el.addEventListener("click", async (e) => {
+    const link = e.target.closest(".open-link");
+    if (!link) return;
+    e.preventDefault();
+    const siteId = link.dataset.site;
+    link.textContent = "⏳ 打开中…";
+    try {
+      await chrome.runtime.sendMessage({ action: "openAndSync", siteId });
+      link.textContent = "✅ 已打开，登录后点「一键同步」";
+    } catch (_) {
+      link.textContent = "❌ 失败";
+    }
+  });
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -121,10 +135,11 @@ async function syncSite(site) {
       if (site.cookieValidation && !hasAuth) msg += " ⚠ 缺 auth";
       if (missingRequired.length) msg += ` ⚠ 缺 ${missingRequired.join(", ")}`;
       const isWarn = (site.cookieValidation && !hasAuth) || missingRequired.length;
-      st.textContent = msg;
       st.className = `site-status show ${isWarn ? "warn" : "ok"}`;
-      if (missingRequired.length) {
-        st.title = `请先访问 ${site.url} 页面，确保页面已登录加载完毕后再同步`;
+      if (missingRequired.length || (site.cookieValidation && !hasAuth)) {
+        st.innerHTML = `${msg} <a href="#" class="open-link" data-site="${site.id}">打开登录</a>`;
+      } else {
+        st.textContent = msg;
       }
       return !missingRequired.length;
     }

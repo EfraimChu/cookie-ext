@@ -57,6 +57,33 @@ body {
 .chip:hover { border-color: var(--accent); color: var(--accent); }
 .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
+/* ─── Filter Bar 2 (noise + group) ─── */
+.filter-bar2 {
+  padding: 6px 24px; gap: 16px; border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+.toggle-label {
+  display: flex; align-items: center; gap: 4px;
+  font-weight: 600; color: var(--text2); cursor: pointer; user-select: none;
+}
+.toggle-label input { accent-color: var(--accent); }
+.group-chips { display: flex; gap: 4px; margin-left: auto; }
+.gchip {
+  padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 600;
+  cursor: pointer; background: var(--bg); color: var(--text2);
+  border: 1px solid transparent; transition: all .15s;
+}
+.gchip:hover { border-color: var(--accent); color: var(--accent); }
+.gchip.active { background: #1d1d1f; color: #fff; border-color: #1d1d1f; }
+
+/* ─── Group Header ─── */
+.group-header {
+  padding: 8px 14px; margin: 12px 0 4px;
+  font-size: 12px; font-weight: 700; color: var(--accent);
+  background: #f0f4ff; border-radius: 8px;
+  border-left: 3px solid var(--accent);
+}
+
 /* ─── Domain Chips ─── */
 .domain-bar {
   padding: 6px 24px; background: var(--card);

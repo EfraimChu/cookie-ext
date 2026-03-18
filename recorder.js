@@ -4,6 +4,18 @@ let filterMethod = "ALL";
 let filterText = "";
 let filterDomain = "";
 let selected = new Set();
+let hideNoise = true;
+let groupMode = "none"; // "none" | "domain" | "time"
+
+const NOISE_PATTERNS = [
+  /google-analytics\.com/, /googletagmanager\.com/, /analytics\./,
+  /sentry\.io/, /hotjar\.com/, /mixpanel\.com/, /segment\.com/,
+  /doubleclick\.net/, /facebook\.net/, /fbevents/, /pixel/,
+  /beacon/, /tracking/, /telemetry/, /collect\?/, /rum\./,
+  /clarity\.ms/, /newrelic\.com/, /datadoghq\.com/,
+  /\.png$/, /\.jpg$/, /\.gif$/, /\.svg$/, /\.ico$/, /\.woff/,
+  /\.css$/, /\.js\?/, /fonts\.googleapis/, /cdn\.jsdelivr/,
+];
 
 // ───────────────────────────────────────────────────────────────
 // Data Loading
@@ -61,8 +73,13 @@ function headersHtml(h) {
     .join("")}</tbody></table>`;
 }
 
+function isNoise(url) {
+  return NOISE_PATTERNS.some((p) => p.test(url));
+}
+
 function filtered() {
   return requests.filter((r) => {
+    if (hideNoise && isNoise(r.url)) return false;
     if (filterMethod !== "ALL" && r.method !== filterMethod) return false;
     if (filterText && !r.url.toLowerCase().includes(filterText)) return false;
     if (filterDomain) {
@@ -108,9 +125,43 @@ document.getElementById("domainChips").addEventListener("click", (e) => {
 // Render
 // ───────────────────────────────────────────────────────────────
 
+function groupRequests(list) {
+  if (groupMode === "none") return [{ label: null, items: list }];
+  if (groupMode === "domain") {
+    const map = new Map();
+    list.forEach((r) => {
+      const u = safeUrl(r.url);
+      const key = u ? u.hostname : "unknown";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(r);
+    });
+    return [...map.entries()].map(([label, items]) => ({ label: `🌐 ${label} (${items.length})`, items }));
+  }
+  if (groupMode === "time") {
+    const sorted = [...list].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+    const groups = [];
+    let current = null;
+    sorted.forEach((r) => {
+      const ts = r.timestamp || 0;
+      if (!current || ts - current.lastTs > 5000) {
+        current = { label: `⏱ ${fmtTime(ts)}`, items: [], lastTs: ts };
+        groups.push(current);
+      }
+      current.items.push(r);
+      current.lastTs = ts;
+    });
+    groups.forEach((g) => { g.label += ` — ${g.items.length} 条请求`; });
+    return groups;
+  }
+  return [{ label: null, items: list }];
+}
+
 function render() {
   const list = filtered();
-  document.getElementById("stats").textContent = `${list.length} / ${requests.length} requests`;
+  const noiseCount = requests.filter((r) => isNoise(r.url)).length;
+  let statsText = `${list.length} / ${requests.length} requests`;
+  if (hideNoise && noiseCount) statsText += ` (${noiseCount} noise hidden)`;
+  document.getElementById("stats").textContent = statsText;
   updateBatchBar();
 
   const el = document.getElementById("content");
@@ -122,60 +173,71 @@ function render() {
   }
 
   const headerCount = (h) => headersToArray(h).length;
+  const groups = groupRequests(list);
+  let globalIdx = 0;
 
-  el.innerHTML = list.map((r, i) => {
-    const idx = requests.indexOf(r);
-    const u = safeUrl(r.url);
-    const path = u ? u.pathname + u.search : r.url;
-    const body = prettyJson(r.requestBody);
-    const isChecked = selected.has(idx) ? "checked" : "";
-
-    return `<div class="card${selected.has(idx) ? " sel" : ""}" id="c${idx}" data-idx="${idx}">
-      <div class="card-summary" data-action="toggle" data-idx="${idx}">
-        <input type="checkbox" class="card-ck" data-action="check" data-idx="${idx}" ${isChecked}>
-        <span class="seq">#${i + 1}</span>
-        <span class="mtd mtd-${r.method}">${r.method}</span>
-        <span class="url" title="${esc(r.url)}">${esc(path)}</span>
-        <span class="sc ${scCls(r.statusCode)}">${r.statusCode || "ERR"}</span>
-        <span class="dur">${fmtMs(r.duration)}</span>
-      </div>
-      <div class="card-detail">
-        <div class="tabs">
-          <div class="tab active" data-action="tab" data-idx="${idx}" data-tab="0">General</div>
-          <div class="tab" data-action="tab" data-idx="${idx}" data-tab="1">Req Headers (${headerCount(r.requestHeaders)})</div>
-          <div class="tab" data-action="tab" data-idx="${idx}" data-tab="2">Body</div>
-          <div class="tab" data-action="tab" data-idx="${idx}" data-tab="3">Res Headers (${headerCount(r.responseHeaders)})</div>
-          <div class="tab" data-action="tab" data-idx="${idx}" data-tab="4">Response</div>
-        </div>
-        <div class="pane active">
-          <div class="fg"><div class="fl">Method</div><input class="fv" data-i="${idx}" data-f="method" value="${esc(r.method)}"></div>
-          <div class="fg"><div class="fl">URL</div><input class="fv" data-i="${idx}" data-f="url" value="${esc(r.url)}"></div>
-          <div class="fg"><div class="fl">Status</div><div class="fv">${r.statusCode || "Error"} ${r.statusLine || ""}</div></div>
-          <div class="fg"><div class="fl">Timing</div><div class="fv">${fmtTime(r.timestamp)} · ${fmtMs(r.duration)}</div></div>
-          ${r.error ? `<div class="fg"><div class="fl">Error</div><div class="fv fv-err">${esc(r.error)}</div></div>` : ""}
-        </div>
-        <div class="pane">${headersHtml(r.requestHeaders)}</div>
-        <div class="pane">
-          <div class="fg"><div class="fl">Request Body</div>
-            <textarea class="fv fv-body" data-i="${idx}" data-f="requestBody" rows="8">${esc(body)}</textarea>
-          </div>
-        </div>
-        <div class="pane">${headersHtml(r.responseHeaders)}</div>
-        <div class="pane">
-          ${r.responseBody
-            ? `<div class="fg"><div class="fl">Response Body</div><pre class="fv fv-body resp-body">${esc(prettyJson(r.responseBody))}</pre></div>`
-            : `<div class="resp-fetch-box"><p>Response Body 未录制</p><button class="abtn abtn-primary" data-action="fetchResp" data-idx="${idx}">🔄 重新发送并获取 Response</button></div>`
-          }
-        </div>
-        <div class="card-actions">
-          <button class="abtn" data-action="curl" data-idx="${idx}">📋 cURL</button>
-          <button class="abtn" data-action="copyJson" data-idx="${idx}">📄 JSON</button>
-          <button class="abtn" data-action="deleteOne" data-idx="${idx}">🗑 删除</button>
-          <button class="abtn abtn-primary" data-action="apply" data-idx="${idx}">💾 应用编辑</button>
-        </div>
-      </div>
-    </div>`;
+  el.innerHTML = groups.map((g) => {
+    const groupHtml = g.label ? `<div class="group-header">${g.label}</div>` : "";
+    const cardsHtml = g.items.map((r) => {
+      const i = globalIdx++;
+      const idx = requests.indexOf(r);
+      return renderCard(r, i, idx, headerCount);
+    }).join("");
+    return groupHtml + cardsHtml;
   }).join("");
+}
+
+function renderCard(r, i, idx, headerCount) {
+  const u = safeUrl(r.url);
+  const path = u ? u.pathname + u.search : r.url;
+  const body = prettyJson(r.requestBody);
+  const isChecked = selected.has(idx) ? "checked" : "";
+
+  return `<div class="card${selected.has(idx) ? " sel" : ""}" id="c${idx}" data-idx="${idx}">
+    <div class="card-summary" data-action="toggle" data-idx="${idx}">
+      <input type="checkbox" class="card-ck" data-action="check" data-idx="${idx}" ${isChecked}>
+      <span class="seq">#${i + 1}</span>
+      <span class="mtd mtd-${r.method}">${r.method}</span>
+      <span class="url" title="${esc(r.url)}">${esc(path)}</span>
+      <span class="sc ${scCls(r.statusCode)}">${r.statusCode || "ERR"}</span>
+      <span class="dur">${fmtMs(r.duration)}</span>
+    </div>
+    <div class="card-detail">
+      <div class="tabs">
+        <div class="tab active" data-action="tab" data-idx="${idx}" data-tab="0">General</div>
+        <div class="tab" data-action="tab" data-idx="${idx}" data-tab="1">Req Headers (${headerCount(r.requestHeaders)})</div>
+        <div class="tab" data-action="tab" data-idx="${idx}" data-tab="2">Body</div>
+        <div class="tab" data-action="tab" data-idx="${idx}" data-tab="3">Res Headers (${headerCount(r.responseHeaders)})</div>
+        <div class="tab" data-action="tab" data-idx="${idx}" data-tab="4">Response</div>
+      </div>
+      <div class="pane active">
+        <div class="fg"><div class="fl">Method</div><input class="fv" data-i="${idx}" data-f="method" value="${esc(r.method)}"></div>
+        <div class="fg"><div class="fl">URL</div><input class="fv" data-i="${idx}" data-f="url" value="${esc(r.url)}"></div>
+        <div class="fg"><div class="fl">Status</div><div class="fv">${r.statusCode || "Error"} ${r.statusLine || ""}</div></div>
+        <div class="fg"><div class="fl">Timing</div><div class="fv">${fmtTime(r.timestamp)} · ${fmtMs(r.duration)}</div></div>
+        ${r.error ? `<div class="fg"><div class="fl">Error</div><div class="fv fv-err">${esc(r.error)}</div></div>` : ""}
+      </div>
+      <div class="pane">${headersHtml(r.requestHeaders)}</div>
+      <div class="pane">
+        <div class="fg"><div class="fl">Request Body</div>
+          <textarea class="fv fv-body" data-i="${idx}" data-f="requestBody" rows="8">${esc(body)}</textarea>
+        </div>
+      </div>
+      <div class="pane">${headersHtml(r.responseHeaders)}</div>
+      <div class="pane">
+        ${r.responseBody
+          ? `<div class="fg"><div class="fl">Response Body</div><pre class="fv fv-body resp-body">${esc(prettyJson(r.responseBody))}</pre></div>`
+          : `<div class="resp-fetch-box"><p>Response Body 未录制</p><button class="abtn abtn-primary" data-action="fetchResp" data-idx="${idx}">🔄 重新发送并获取 Response</button></div>`
+        }
+      </div>
+      <div class="card-actions">
+        <button class="abtn" data-action="curl" data-idx="${idx}">📋 cURL</button>
+        <button class="abtn" data-action="copyJson" data-idx="${idx}">📄 JSON</button>
+        <button class="abtn" data-action="deleteOne" data-idx="${idx}">🗑 删除</button>
+        <button class="abtn abtn-primary" data-action="apply" data-idx="${idx}">💾 应用编辑</button>
+      </div>
+    </div>
+  </div>`;
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -335,6 +397,21 @@ async function fetchResponse(idx, btn) {
 
 document.getElementById("filterInput").addEventListener("input", (e) => {
   filterText = e.target.value.trim().toLowerCase();
+  render();
+});
+
+document.getElementById("ckNoise").addEventListener("change", (e) => {
+  hideNoise = e.target.checked;
+  renderDomainChips();
+  render();
+});
+
+document.getElementById("groupChips").addEventListener("click", (e) => {
+  const c = e.target.closest(".gchip");
+  if (!c) return;
+  document.querySelectorAll("#groupChips .gchip").forEach((x) => x.classList.remove("active"));
+  c.classList.add("active");
+  groupMode = c.dataset.g;
   render();
 });
 

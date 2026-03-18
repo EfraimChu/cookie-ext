@@ -42,7 +42,8 @@ async function autoSync() {
         const missing = site.requiredCookies.filter((k) => !cookieNames.has(k));
         if (missing.length) {
           payload.missingCookies = missing;
-          console.warn(`[${site.id}] Missing required cookies: ${missing.join(", ")}. Visit ${site.url} first.`);
+          console.warn(`[${site.id}] Missing required cookies: ${missing.join(", ")}. Opening ${site.url}...`);
+          await autoOpenAndResync(site, missing);
         }
       }
     }
@@ -84,6 +85,63 @@ async function autoSync() {
   await chrome.storage.local.set({
     lastAutoSync: { time: Date.now(), timeStr: ts, synced: ok, total: list.length },
   });
+}
+
+// ───────────────────────────────────────────────────────────────
+// Auto Open & Resync — open site tab when cookies are expired/missing
+// ───────────────────────────────────────────────────────────────
+
+async function autoOpenAndResync(site, missing) {
+  const origin = new URL(site.url).origin;
+  let tabs = await chrome.tabs.query({ url: `${origin}/*` });
+
+  if (!tabs.length) {
+    const tab = await chrome.tabs.create({ url: site.url, active: false });
+    tabs = [tab];
+  } else {
+    await chrome.tabs.reload(tabs[0].id);
+  }
+
+  // Wait for the page to load, then re-check cookies after 5s
+  const tabId = tabs[0].id;
+  const checkAfterLoad = () => {
+    setTimeout(async () => {
+      const cookies = await chrome.cookies.getAll({ url: site.url });
+      const names = new Set(cookies.map((c) => c.name));
+      const stillMissing = missing.filter((k) => !names.has(k));
+      if (!stillMissing.length) {
+        console.log(`[${site.id}] Cookies recovered after page load, syncing...`);
+        const payload = {
+          site_id: site.id, name: site.name, url: site.url,
+          cookies: cookies.map((c) => `${c.name}=${c.value}`).join("; "),
+        };
+        try { await fetch(`${SERVER_URL}/save`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }); } catch (_) {}
+      }
+    }, 5000);
+  };
+  chrome.tabs.onUpdated.addListener(function listener(id, info) {
+    if (id === tabId && info.status === "complete") {
+      chrome.tabs.onUpdated.removeListener(listener);
+      checkAfterLoad();
+    }
+  });
+}
+
+async function openAndSync(siteId) {
+  const { sites } = await chrome.storage.local.get("sites");
+  const list = sites || DEFAULT_SITES;
+  const site = list.find((s) => s.id === siteId);
+  if (!site) return { ok: false, error: "Site not found" };
+
+  const origin = new URL(site.url).origin;
+  let tabs = await chrome.tabs.query({ url: `${origin}/*` });
+  if (!tabs.length) {
+    await chrome.tabs.create({ url: site.url, active: true });
+  } else {
+    await chrome.tabs.update(tabs[0].id, { active: true });
+    await chrome.tabs.reload(tabs[0].id);
+  }
+  return { ok: true, message: `Opened ${site.url}. Will resync after page loads.` };
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -220,6 +278,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
     case "triggerSync":
       autoSync().then(() => sendResponse({ ok: true }));
+      return true;
+
+    case "openAndSync":
+      openAndSync(msg.siteId)
+        .then((r) => sendResponse(r))
+        .catch((e) => sendResponse({ ok: false, error: e.message }));
       return true;
 
     case "fetchResponse": {
