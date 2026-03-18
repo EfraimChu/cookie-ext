@@ -118,7 +118,7 @@ document.getElementById("domainChips").addEventListener("click", (e) => {
   if (!c) return;
   filterDomain = c.dataset.d;
   renderDomainChips();
-  render();
+  refreshView();
 });
 
 // ───────────────────────────────────────────────────────────────
@@ -474,19 +474,24 @@ async function fetchResponse(idx, btn) {
 // Filter
 // ───────────────────────────────────────────────────────────────
 
+function refreshView() {
+  render();
+  if (currentView === "timeline") renderTimeline();
+}
+
 let _filterTimer;
 document.getElementById("filterInput").addEventListener("input", (e) => {
   clearTimeout(_filterTimer);
   _filterTimer = setTimeout(() => {
     filterText = e.target.value.trim().toLowerCase();
-    render();
+    refreshView();
   }, 150);
 });
 
 document.getElementById("ckNoise").addEventListener("change", (e) => {
   hideNoise = e.target.checked;
   renderDomainChips();
-  render();
+  refreshView();
 });
 
 document.getElementById("groupChips").addEventListener("click", (e) => {
@@ -495,7 +500,7 @@ document.getElementById("groupChips").addEventListener("click", (e) => {
   document.querySelectorAll("#groupChips .gchip").forEach((x) => x.classList.remove("active"));
   c.classList.add("active");
   groupMode = c.dataset.g;
-  render();
+  refreshView();
 });
 
 document.getElementById("methodChips").addEventListener("click", (e) => {
@@ -504,7 +509,7 @@ document.getElementById("methodChips").addEventListener("click", (e) => {
   document.querySelectorAll("#methodChips .chip").forEach((x) => x.classList.remove("active"));
   c.classList.add("active");
   filterMethod = c.dataset.m;
-  render();
+  refreshView();
 });
 
 // ───────────────────────────────────────────────────────────────
@@ -552,13 +557,14 @@ document.getElementById("btnSave").addEventListener("click", async () => {
   }
 });
 
-document.getElementById("btnClear").addEventListener("click", () => {
+document.getElementById("btnClear").addEventListener("click", async () => {
   if (!confirm("清空所有录制数据？")) return;
   requests = [];
   selected.clear();
-  chrome.storage.local.remove("lastRecording");
+  try { await chrome.runtime.sendMessage({ action: "clearRecording" }); } catch (_) {}
   renderDomainChips();
   render();
+  if (currentView === "timeline") renderTimeline();
   toast("🗑 已清空");
 });
 

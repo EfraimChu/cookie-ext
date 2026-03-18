@@ -285,6 +285,17 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       sendResponse({ requests: [...rec.done] });
       return false;
 
+    case "clearRecording":
+      rec.done = [];
+      rec.pending = {};
+      Promise.all([
+        chrome.storage.local.remove("lastRecording"),
+        saveRecState(),
+      ])
+        .then(() => sendResponse({ ok: true }))
+        .catch((e) => sendResponse({ ok: false, error: e.message }));
+      return true;
+
     case "getAutoSyncInfo":
       chrome.storage.local.get("lastAutoSync").then(({ lastAutoSync }) => {
         sendResponse(lastAutoSync || null);
