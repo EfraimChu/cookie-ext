@@ -305,6 +305,75 @@ input.fv:focus, textarea.fv:focus {
 .modal-status.ok small { display: block; margin-top: 4px; color: var(--text2); }
 .modal-status.err { display: block; background: #fce8e6; color: var(--red); }
 
+/* ─── View Toggle ─── */
+.view-toggle {
+  display: flex; gap: 2px; padding: 6px 24px;
+  background: var(--card); border-bottom: 1px solid var(--border);
+}
+.vt-btn {
+  padding: 4px 14px; border: 1px solid var(--border); border-radius: 6px;
+  background: transparent; color: var(--text2); font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+}
+.vt-btn:hover { border-color: var(--accent); color: var(--accent); }
+.vt-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ─── Timeline ─── */
+.timeline-container {
+  padding: 12px 24px; overflow-x: auto;
+}
+.tl-header {
+  display: flex; align-items: center; gap: 0;
+  padding: 4px 0; border-bottom: 2px solid var(--border);
+  font-size: 9px; font-weight: 700; color: var(--text2);
+  text-transform: uppercase;
+}
+.tl-label { width: 240px; flex-shrink: 0; padding: 0 6px; display: flex; align-items: center; gap: 4px; overflow: hidden; }
+.tl-label-hd { font-size: 9px; font-weight: 700; color: var(--text2); }
+.tl-path { font-family: var(--mono); font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-track { flex: 1; position: relative; height: 18px; min-width: 300px; }
+.tl-scale-track { height: 14px; }
+.tl-status { width: 44px; flex-shrink: 0; text-align: center; font-size: 10px; font-weight: 700; font-family: var(--mono); }
+
+.tl-row {
+  display: flex; align-items: center; gap: 0;
+  padding: 2px 0; border-bottom: 1px solid var(--border2);
+  transition: background .1s;
+}
+.tl-row:hover { background: rgba(0,113,227,.03); }
+
+.tl-bar {
+  position: absolute; top: 2px; height: 14px; border-radius: 3px;
+  min-width: 2px; transition: opacity .15s;
+  display: flex; align-items: center; justify-content: flex-end; padding-right: 4px;
+}
+.tl-bar.tl-ok { background: linear-gradient(90deg, #34d058, #28a745); }
+.tl-bar.tl-err { background: linear-gradient(90deg, #f97583, #d73a49); }
+.tl-bar.tl-redir { background: linear-gradient(90deg, #ffdf5d, #f9a825); }
+.tl-bar.tl-pending { background: linear-gradient(90deg, #959da5, #6a737d); }
+.tl-row:hover .tl-bar { opacity: .85; }
+
+.tl-dur {
+  font-size: 8px; font-weight: 700; color: #fff;
+  white-space: nowrap; text-shadow: 0 1px 2px rgba(0,0,0,.3);
+}
+
+.tl-scale {
+  position: absolute; top: 0; font-size: 8px; color: var(--text2);
+  transform: translateX(-50%); white-space: nowrap; font-family: var(--mono);
+}
+
+.tl-summary {
+  padding: 10px 0; font-size: 11px; color: var(--text2);
+  border-top: 1px solid var(--border); margin-top: 8px;
+}
+
+/* dark timeline */
+body.dark .tl-row:hover { background: rgba(77,163,255,.05); }
+body.dark .tl-bar.tl-ok { background: linear-gradient(90deg, #32d74b, #28a745); }
+body.dark .tl-bar.tl-err { background: linear-gradient(90deg, #ff453a, #d73a49); }
+body.dark .tl-bar.tl-redir { background: linear-gradient(90deg, #ff9f0a, #f9a825); }
+
 /* ─── JSON Syntax Highlighting ─── */
 .jhl { color: var(--text); }
 .jk { color: #0550ae; }

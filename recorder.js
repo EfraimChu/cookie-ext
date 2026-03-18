@@ -685,6 +685,101 @@ function generateSkillMd(list) {
 }
 
 // ───────────────────────────────────────────────────────────────
+// View Toggle (List / Timeline)
+// ───────────────────────────────────────────────────────────────
+
+let currentView = "list";
+
+document.getElementById("viewToggle").addEventListener("click", (e) => {
+  const btn = e.target.closest(".vt-btn");
+  if (!btn) return;
+  currentView = btn.dataset.v;
+  document.querySelectorAll("#viewToggle .vt-btn").forEach((b) => b.classList.toggle("active", b === btn));
+  document.getElementById("content").style.display = currentView === "list" ? "" : "none";
+  document.getElementById("timelineContainer").style.display = currentView === "timeline" ? "" : "none";
+  if (currentView === "timeline") renderTimeline();
+});
+
+// ───────────────────────────────────────────────────────────────
+// Timeline / Waterfall View
+// ───────────────────────────────────────────────────────────────
+
+function renderTimeline() {
+  const list = filtered();
+  const el = document.getElementById("timelineContainer");
+
+  if (!list.length) {
+    el.innerHTML = '<div class="empty"><p>无请求数据</p></div>';
+    return;
+  }
+
+  const withTs = list.filter((r) => r.timestamp);
+  if (!withTs.length) {
+    el.innerHTML = '<div class="empty"><p>无时间戳数据</p></div>';
+    return;
+  }
+
+  const tMin = Math.min(...withTs.map((r) => r.timestamp));
+  const tMax = Math.max(...withTs.map((r) => r.timestamp + (r.duration || 0)));
+  const span = tMax - tMin || 1;
+
+  const barWidth = 100;
+  const scaleLabels = 5;
+  const scales = [];
+  for (let i = 0; i <= scaleLabels; i++) {
+    const t = tMin + (span / scaleLabels) * i;
+    const pct = ((t - tMin) / span) * barWidth;
+    const ms = t - tMin;
+    scales.push(`<div class="tl-scale" style="left:${pct}%">${ms < 1000 ? Math.round(ms) + "ms" : (ms / 1000).toFixed(1) + "s"}</div>`);
+  }
+
+  const rows = withTs.map((r, i) => {
+    const u = safeUrl(r.url);
+    const path = u ? u.pathname : r.url;
+    const startPct = ((r.timestamp - tMin) / span) * barWidth;
+    const durPct = Math.max(((r.duration || 50) / span) * barWidth, 0.3);
+    const sc = r.statusCode || 0;
+    const barClass = sc >= 200 && sc < 300 ? "tl-ok" : sc >= 400 ? "tl-err" : sc >= 300 ? "tl-redir" : "tl-pending";
+
+    return `<div class="tl-row" title="${esc(r.url)}">
+      <div class="tl-label">
+        <span class="mtd mtd-${r.method}" style="font-size:8px;padding:1px 4px">${r.method}</span>
+        <span class="tl-path">${esc(path.length > 40 ? "…" + path.slice(-38) : path)}</span>
+      </div>
+      <div class="tl-track">
+        <div class="tl-bar ${barClass}" style="left:${startPct}%;width:${durPct}%">
+          <span class="tl-dur">${fmtMs(r.duration)}</span>
+        </div>
+      </div>
+      <div class="tl-status ${scCls(sc)}">${sc || "ERR"}</div>
+    </div>`;
+  }).join("");
+
+  el.innerHTML = `<div class="tl-header">
+    <div class="tl-label tl-label-hd">请求</div>
+    <div class="tl-track tl-scale-track">${scales.join("")}</div>
+    <div class="tl-status tl-label-hd">状态</div>
+  </div>${rows}
+  <div class="tl-summary">
+    ${withTs.length} 请求 · 总耗时 ${fmtMs(span)} · 
+    并行峰值 ${calcMaxParallel(withTs)}
+  </div>`;
+}
+
+function calcMaxParallel(list) {
+  const events = [];
+  list.forEach((r) => {
+    if (!r.timestamp) return;
+    events.push({ t: r.timestamp, d: 1 });
+    events.push({ t: r.timestamp + (r.duration || 0), d: -1 });
+  });
+  events.sort((a, b) => a.t - b.t || a.d - b.d);
+  let max = 0, cur = 0;
+  events.forEach((e) => { cur += e.d; if (cur > max) max = cur; });
+  return max;
+}
+
+// ───────────────────────────────────────────────────────────────
 // JSON Syntax Highlighting
 // ───────────────────────────────────────────────────────────────
 
