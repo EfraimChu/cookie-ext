@@ -394,7 +394,12 @@ document.getElementById("content").addEventListener("click", (e) => {
     }
     case "deleteOne": {
       requests.splice(idx, 1);
-      selected.delete(idx);
+      const newSel = new Set();
+      selected.forEach((si) => {
+        if (si < idx) newSel.add(si);
+        else if (si > idx) newSel.add(si - 1);
+      });
+      selected = newSel;
       renderDomainChips();
       render();
       toast("🗑 已删除");
@@ -469,9 +474,13 @@ async function fetchResponse(idx, btn) {
 // Filter
 // ───────────────────────────────────────────────────────────────
 
+let _filterTimer;
 document.getElementById("filterInput").addEventListener("input", (e) => {
-  filterText = e.target.value.trim().toLowerCase();
-  render();
+  clearTimeout(_filterTimer);
+  _filterTimer = setTimeout(() => {
+    filterText = e.target.value.trim().toLowerCase();
+    render();
+  }, 150);
 });
 
 document.getElementById("ckNoise").addEventListener("change", (e) => {

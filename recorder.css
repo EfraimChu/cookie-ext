@@ -348,6 +348,24 @@ body.dark .abtn:hover { background: #2e3a4a; }
 body.dark .toast { background: #3a3a3e; }
 body.dark .group-header { background: #1e2a3a; }
 body.dark .resp-fetch-box { color: var(--text2); }
+body.dark .card.sel { border-color: var(--accent); background: #1e2a3a; }
+body.dark .card-summary:hover { background: #2a2a2e; }
+body.dark .mtd-GET { background: #1a2e1a; color: #32d74b; }
+body.dark .mtd-POST { background: #1a2a3e; color: #4da3ff; }
+body.dark .mtd-PUT, body.dark .mtd-PATCH { background: #2e2a1a; color: #ff9f0a; }
+body.dark .mtd-DELETE { background: #2e1a1a; color: #ff453a; }
+body.dark .sc-2 { background: #1a2e1a; color: #32d74b; }
+body.dark .sc-3 { background: #1a2a3e; color: #4da3ff; }
+body.dark .sc-4 { background: #2e2a1a; color: #ff9f0a; }
+body.dark .sc-5, body.dark .sc-0 { background: #2e1a1a; color: #ff453a; }
+body.dark .modal-close { background: #3a3a3e; color: var(--text); }
+body.dark .modal-close:hover { background: #4a4a4e; }
+body.dark .abtn-primary { background: var(--accent); color: #fff; }
+body.dark .abtn-batch-curl { background: var(--card); }
+body.dark .abtn-del { background: var(--card); }
+body.dark .fv-err { color: var(--red); background: #2e1a1a; border-color: #5a2a2a; }
+body.dark .empty { color: var(--text2); }
+body.dark .empty h3 { color: var(--text); }
 
 body.dark .jk { color: #79c0ff; }
 body.dark .js { color: #a5d6ff; }

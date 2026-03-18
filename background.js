@@ -119,12 +119,19 @@ async function autoOpenAndResync(site, missing) {
       }
     }, 5000);
   };
-  chrome.tabs.onUpdated.addListener(function listener(id, info) {
+
+  const timeout = setTimeout(() => {
+    chrome.tabs.onUpdated.removeListener(listener);
+  }, 30000);
+
+  function listener(id, info) {
     if (id === tabId && info.status === "complete") {
+      clearTimeout(timeout);
       chrome.tabs.onUpdated.removeListener(listener);
       checkAfterLoad();
     }
-  });
+  }
+  chrome.tabs.onUpdated.addListener(listener);
 }
 
 async function openAndSync(siteId) {
@@ -245,6 +252,14 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   switch (msg.action) {
     case "startRecording":
       rec = { active: true, tabId: msg.tabId, pending: {}, done: [] };
+      Promise.all([
+        chrome.scripting.executeScript({
+          target: { tabId: msg.tabId }, files: ["interceptor_bridge.js"],
+        }),
+        chrome.scripting.executeScript({
+          target: { tabId: msg.tabId }, files: ["interceptor.js"], world: "MAIN",
+        }),
+      ]).catch(() => {});
       saveRecState()
         .then(() => sendResponse({ ok: true }))
         .catch((e) => sendResponse({ ok: false, error: e.message }));
@@ -279,6 +294,25 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     case "triggerSync":
       autoSync().then(() => sendResponse({ ok: true }));
       return true;
+
+    case "responseBody": {
+      if (!rec.active) break;
+      const { url, status, body } = msg;
+      for (let i = rec.done.length - 1; i >= 0; i--) {
+        if (rec.done[i].url === url && !rec.done[i].responseBody) {
+          rec.done[i].responseBody = body;
+          break;
+        }
+      }
+      for (const [, p] of Object.entries(rec.pending)) {
+        if (p.url === url && !p.responseBody) {
+          p.responseBody = body;
+          break;
+        }
+      }
+      sendResponse({ ok: true });
+      return false;
+    }
 
     case "openAndSync":
       openAndSync(msg.siteId)
