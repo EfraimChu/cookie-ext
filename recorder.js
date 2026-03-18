@@ -277,6 +277,69 @@ document.getElementById("btnBatchDel").addEventListener("click", () => {
   toast(`🗑 已删除 ${toRemove.length} 条`);
 });
 
+document.getElementById("btnBatchCurl").addEventListener("click", () => {
+  if (!selected.size) return;
+  const curls = [...selected].sort((a, b) => a - b).map((idx) => buildCurl(idx));
+  navigator.clipboard.writeText(curls.join("\n\n"));
+  toast(`📋 已复制 ${curls.length} 条 cURL`);
+});
+
+// ───────────────────────────────────────────────────────────────
+// Drag Select — hold mouse and swipe across cards to select
+// ───────────────────────────────────────────────────────────────
+
+let dragState = null;
+
+document.getElementById("content").addEventListener("mousedown", (e) => {
+  if (e.button !== 0) return;
+  const summary = e.target.closest(".card-summary");
+  if (!summary || e.target.type === "checkbox" || e.target.closest("[data-action='tab']")) return;
+  const card = summary.closest(".card");
+  if (!card) return;
+  const idx = parseInt(card.dataset.idx);
+  dragState = { startIdx: idx, lastIdx: idx, moved: false };
+});
+
+document.getElementById("content").addEventListener("mousemove", (e) => {
+  if (!dragState) return;
+  const summary = e.target.closest(".card-summary");
+  if (!summary) return;
+  const card = summary.closest(".card");
+  if (!card) return;
+  const idx = parseInt(card.dataset.idx);
+  if (idx === dragState.lastIdx) return;
+  dragState.moved = true;
+  dragState.lastIdx = idx;
+
+  const minIdx = Math.min(dragState.startIdx, idx);
+  const maxIdx = Math.max(dragState.startIdx, idx);
+
+  selected.clear();
+  document.querySelectorAll(".card").forEach((c) => {
+    const ci = parseInt(c.dataset.idx);
+    if (ci >= minIdx && ci <= maxIdx) {
+      selected.add(ci);
+      c.classList.add("sel");
+      const ck = c.querySelector(".card-ck");
+      if (ck) ck.checked = true;
+    } else {
+      c.classList.remove("sel");
+      const ck = c.querySelector(".card-ck");
+      if (ck) ck.checked = false;
+    }
+  });
+  updateBatchBar();
+});
+
+document.addEventListener("mouseup", () => {
+  if (dragState?.moved) {
+    // prevent the click from toggling the card open/close
+    const handler = (e) => { e.stopPropagation(); };
+    document.getElementById("content").addEventListener("click", handler, { capture: true, once: true });
+  }
+  dragState = null;
+});
+
 // ───────────────────────────────────────────────────────────────
 // Event Delegation
 // ───────────────────────────────────────────────────────────────
@@ -344,7 +407,7 @@ document.getElementById("content").addEventListener("click", (e) => {
   }
 });
 
-function copyCurl(idx) {
+function buildCurl(idx) {
   const r = requests[idx];
   const hArr = headersToArray(r.requestHeaders);
   let c = `curl '${r.url}'`;
@@ -357,7 +420,11 @@ function copyCurl(idx) {
   });
   const bodyStr = bodyAsString(r.requestBody);
   if (bodyStr) c += ` \\\n  --data-raw '${bodyStr.replace(/'/g, "'\\''")}'`;
-  navigator.clipboard.writeText(c);
+  return c;
+}
+
+function copyCurl(idx) {
+  navigator.clipboard.writeText(buildCurl(idx));
   toast("📋 cURL copied");
 }
 
@@ -381,7 +448,14 @@ async function fetchResponse(idx, btn) {
     if (resp?.ok) {
       requests[idx].responseBody = resp.body;
       requests[idx].statusCode = resp.status;
-      render();
+      const card = document.getElementById(`c${idx}`);
+      if (card) {
+        const panes = card.querySelectorAll(".pane");
+        const respPane = panes[4];
+        if (respPane) {
+          respPane.innerHTML = `<div class="fg"><div class="fl">Response Body (${resp.status})</div><pre class="fv fv-body resp-body">${esc(prettyJson(resp.body))}</pre></div>`;
+        }
+      }
       toast(`✅ 获取到 Response (${resp.status})`);
     } else {
       btn.textContent = `❌ ${resp?.error || "失败"}`;
