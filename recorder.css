@@ -34,6 +34,8 @@ body {
 .tb-save:hover { background: rgba(255,255,255,.25); }
 .tb-clear { background: rgba(255,59,48,.15); color: #ff6961; border: 1px solid rgba(255,59,48,.2); }
 .tb-clear:hover { background: rgba(255,59,48,.3); }
+.tb-batch { background: var(--bg); color: var(--text2); border: 1px solid var(--border); }
+.tb-batch:hover { border-color: var(--accent); color: var(--accent); }
 
 /* ─── Filter ─── */
 .filter-bar {
@@ -55,6 +57,40 @@ body {
 .chip:hover { border-color: var(--accent); color: var(--accent); }
 .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
+/* ─── Domain Chips ─── */
+.domain-bar {
+  padding: 6px 24px; background: var(--card);
+  border-bottom: 1px solid var(--border);
+  display: flex; gap: 4px; flex-wrap: wrap;
+  overflow-x: auto;
+}
+.domain-bar:empty { display: none; }
+.dchip {
+  padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 600;
+  cursor: pointer; background: var(--bg); color: var(--text2);
+  border: 1px solid transparent; transition: all .15s;
+  white-space: nowrap;
+}
+.dchip:hover { border-color: var(--accent); color: var(--accent); }
+.dchip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.dchip b { font-weight: 800; }
+
+/* ─── Batch Bar ─── */
+.batch-bar {
+  display: none; padding: 8px 24px; background: #fff5f5;
+  border-bottom: 1px solid #ffd6d6;
+  align-items: center; gap: 12px; font-size: 12px;
+  animation: slideDown .15s ease;
+}
+.batch-bar.show { display: flex; }
+.batch-bar b { color: var(--red); font-size: 14px; }
+.abtn-del {
+  padding: 4px 12px; border-radius: 6px; border: 1px solid var(--red);
+  background: #fff; color: var(--red); font-size: 10px; font-weight: 600;
+  cursor: pointer; transition: all .15s; margin-left: auto;
+}
+.abtn-del:hover { background: var(--red); color: #fff; }
+
 /* ─── Content ─── */
 .content { padding: 16px 24px; }
 .empty { text-align: center; padding: 60px 20px; color: var(--text2); }
@@ -65,15 +101,20 @@ body {
 .card {
   background: var(--card); border: 1px solid var(--border);
   border-radius: var(--r); margin-bottom: 6px;
-  overflow: hidden; transition: box-shadow .2s;
+  overflow: hidden; transition: box-shadow .2s, border-color .15s;
 }
 .card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.05); }
 .card.open { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.card.sel { border-color: var(--accent); background: #f8fbff; }
 .card-summary {
   padding: 8px 14px; display: flex; align-items: center; gap: 10px;
   cursor: pointer; transition: background .1s;
 }
 .card-summary:hover { background: #fafafa; }
+.card-ck {
+  width: 14px; height: 14px; flex-shrink: 0; cursor: pointer;
+  accent-color: var(--accent);
+}
 .seq {
   font-size: 10px; color: var(--text2); min-width: 24px; text-align: right;
   font-family: var(--mono);
@@ -107,11 +148,11 @@ body {
 }
 .card.open .card-detail { display: block; }
 @keyframes slideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 2000px; } }
-.tabs { display: flex; background: var(--card); border-bottom: 1px solid var(--border); }
+.tabs { display: flex; background: var(--card); border-bottom: 1px solid var(--border); overflow-x: auto; }
 .tab {
   padding: 7px 16px; font-size: 11px; font-weight: 600;
   cursor: pointer; border-bottom: 2px solid transparent;
-  color: var(--text2); transition: all .15s;
+  color: var(--text2); transition: all .15s; white-space: nowrap;
 }
 .tab:hover { color: var(--text); }
 .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
@@ -129,15 +170,21 @@ body {
   border-radius: 6px; padding: 7px 10px;
   word-break: break-all; white-space: pre-wrap;
 }
-input.fv, textarea.fv {
-  width: 100%; outline: none; resize: vertical;
-}
+input.fv, textarea.fv { width: 100%; outline: none; resize: vertical; }
 textarea.fv { min-height: 60px; }
 .fv-body { min-height: 100px; font-size: 11px; line-height: 1.6; }
+pre.fv { overflow: auto; max-height: 400px; }
 .fv-err { color: var(--red); background: #fff5f5; border-color: #ffd6d6; }
 input.fv:focus, textarea.fv:focus {
   border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,113,227,.08);
 }
+
+/* ─── Response Fetch Box ─── */
+.resp-fetch-box {
+  text-align: center; padding: 24px 16px; color: var(--text2);
+}
+.resp-fetch-box p { margin-bottom: 10px; font-size: 12px; }
+.resp-body { max-height: 500px; overflow: auto; }
 
 .htable { width: 100%; border-collapse: collapse; font-size: 11px; font-family: var(--mono); }
 .htable th {
@@ -190,15 +237,19 @@ input.fv:focus, textarea.fv:focus {
   display: grid; place-items: center; transition: all .15s;
 }
 .modal-close:hover { background: #e5e5e7; }
-.modal-body {
-  padding: 16px 20px; overflow-y: auto; flex: 1;
-}
+.modal-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
 .modal-body label { display: block; font-size: 10px; font-weight: 700; color: var(--text2); text-transform: uppercase; margin: 8px 0 3px; }
 .modal-body input {
   width: 100%; padding: 7px 10px; border: 1px solid var(--border);
   border-radius: 7px; font-size: 12px; outline: none;
 }
 .modal-body input:focus { border-color: var(--accent); }
+.modal-body textarea {
+  width: 100%; padding: 7px 10px; border: 1px solid var(--border);
+  border-radius: 7px; font-size: 12px; outline: none; resize: vertical;
+  font-family: -apple-system, "SF Pro Text", system-ui, sans-serif;
+}
+.modal-body textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,113,227,.08); }
 .skill-preview {
   margin-top: 8px; padding: 12px; background: #1d1d1f; color: #e0e0e0;
   border-radius: 8px; font-family: var(--mono); font-size: 11px;
@@ -208,12 +259,6 @@ input.fv:focus, textarea.fv:focus {
   display: flex; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--border);
   justify-content: flex-end;
 }
-.modal-body textarea {
-  width: 100%; padding: 7px 10px; border: 1px solid var(--border);
-  border-radius: 7px; font-size: 12px; outline: none; resize: vertical;
-  font-family: -apple-system, "SF Pro Text", system-ui, sans-serif;
-}
-.modal-body textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,113,227,.08); }
 .modal-status {
   padding: 10px 20px; font-size: 12px; border-top: 1px solid var(--border);
   display: none;

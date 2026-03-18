@@ -21,7 +21,7 @@
 </header>
 
 <div class="filter-bar">
-  <input class="filter-input" id="filterInput" placeholder="🔍 搜索 URL …">
+  <input class="filter-input" id="filterInput" placeholder="🔍 搜索 URL / path …">
   <div class="method-chips" id="methodChips">
     <span class="chip active" data-m="ALL">ALL</span>
     <span class="chip" data-m="GET">GET</span>
@@ -29,6 +29,14 @@
     <span class="chip" data-m="PUT">PUT</span>
     <span class="chip" data-m="DELETE">DEL</span>
   </div>
+  <button class="tb-btn tb-batch" id="btnSelectAll">☑ 全选</button>
+</div>
+
+<div class="domain-bar" id="domainChips"></div>
+
+<div class="batch-bar" id="batchBar">
+  <span>已选 <b id="batchCount">0</b> 条</span>
+  <button class="abtn abtn-del" id="btnBatchDel">🗑 删除选中</button>
 </div>
 
 <main class="content" id="content">

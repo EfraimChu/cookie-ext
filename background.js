@@ -222,6 +222,20 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       autoSync().then(() => sendResponse({ ok: true }));
       return true;
 
+    case "fetchResponse": {
+      const { url, method, headers, body } = msg;
+      const opts = { method: method || "GET", headers: headers || {} };
+      if (body && method !== "GET" && method !== "HEAD") opts.body = body;
+      fetch(url, opts)
+        .then(async (r) => {
+          let text = "";
+          try { text = await r.text(); } catch (_) {}
+          sendResponse({ ok: true, status: r.status, body: text });
+        })
+        .catch((e) => sendResponse({ ok: false, error: e.message }));
+      return true;
+    }
+
     default:
       sendResponse({ error: "unknown action" });
       return false;
