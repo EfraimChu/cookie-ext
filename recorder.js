@@ -401,9 +401,13 @@ document.getElementById("btnSkillGenerate").addEventListener("click", async () =
     });
     const result = await resp.json();
     if (result.ok) {
-      statusEl.innerHTML = `✅ Skill 已生成<br><code>${result.skill_dir}</code><br><small>在 Cursor 中对 Agent 说: "读取 ${result.skill_dir}/.agent_prompt.md，完善 main.py"</small>`;
+      const prompt = `读取 ${result.skill_dir}/.agent_prompt.md 和 api_spec.json，根据用户诉求完善 main.py 的实现`;
+      await navigator.clipboard.writeText(prompt);
+      statusEl.innerHTML = `✅ Skill 已生成 · <b>Prompt 已复制到剪贴板</b><br>`
+        + `<code>${result.skill_dir}</code><br>`
+        + `<small>👉 直接粘贴到 Cursor 对话框即可</small>`;
       statusEl.className = "modal-status ok";
-      toast(`✅ Skill 已生成: ${result.skill_dir}`);
+      toast("✅ 已复制 Cursor Prompt → 粘贴到 Cursor 对话框");
     } else {
       statusEl.textContent = `❌ ${result.error || "生成失败"}`;
       statusEl.className = "modal-status err";
