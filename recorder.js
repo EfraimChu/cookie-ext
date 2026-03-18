@@ -351,6 +351,11 @@ document.getElementById("btnSkill").addEventListener("click", () => {
   if (!list.length) return toast("无数据可生成");
   document.getElementById("skillStepCount").textContent = `(${list.length} steps)`;
   document.getElementById("skillPreview").textContent = generateSkillMd(list);
+  // Auto-suggest name from first API domain
+  if (!document.getElementById("skillName").value) {
+    const u = safeUrl(list[0]?.url);
+    if (u) document.getElementById("skillName").value = u.hostname.split(".")[0] + "-workflow";
+  }
   document.getElementById("skillModal").classList.add("show");
 });
 
@@ -373,6 +378,40 @@ document.getElementById("btnSkillDownload").addEventListener("click", () => {
     "text/markdown"
   );
   toast("📥 已下载 .md");
+});
+
+// Generate Skill via server → gen-skill CLI
+document.getElementById("btnSkillGenerate").addEventListener("click", async () => {
+  const name = document.getElementById("skillName").value?.trim();
+  const desc = document.getElementById("skillDesc").value?.trim();
+  const requirements = document.getElementById("skillRequirements")?.value?.trim();
+  const statusEl = document.getElementById("skillGenStatus");
+
+  if (!name) { toast("⚠ 请填写 Skill 名称"); return; }
+
+  statusEl.textContent = "⏳ 正在生成 Skill…";
+  statusEl.className = "modal-status loading";
+
+  try {
+    const data = exportData();
+    const resp = await fetch(`${SERVER_URL}/gen-skill`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, desc, requirements, requests: data }),
+    });
+    const result = await resp.json();
+    if (result.ok) {
+      statusEl.innerHTML = `✅ Skill 已生成<br><code>${result.skill_dir}</code><br><small>在 Cursor 中对 Agent 说: "读取 ${result.skill_dir}/.agent_prompt.md，完善 main.py"</small>`;
+      statusEl.className = "modal-status ok";
+      toast(`✅ Skill 已生成: ${result.skill_dir}`);
+    } else {
+      statusEl.textContent = `❌ ${result.error || "生成失败"}`;
+      statusEl.className = "modal-status err";
+    }
+  } catch (e) {
+    statusEl.textContent = `❌ 服务未运行: ${e.message}`;
+    statusEl.className = "modal-status err";
+  }
 });
 
 function generateSkillMd(list) {

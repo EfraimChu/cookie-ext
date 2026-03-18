@@ -43,21 +43,25 @@
 <div class="modal-overlay" id="skillModal">
   <div class="modal">
     <div class="modal-header">
-      <h2>🧩 生成 Skill 模板</h2>
+      <h2>🧩 生成 Cursor Skill</h2>
       <button class="modal-close" id="skillModalClose">✕</button>
     </div>
     <div class="modal-body">
       <label>Skill 名称</label>
-      <input id="skillName" value="api-workflow" placeholder="如: create-order-flow">
+      <input id="skillName" value="" placeholder="如: create-order-flow">
       <label>描述</label>
       <input id="skillDesc" placeholder="如: 创建订单的完整 API 链路">
+      <label>你的诉求 / 需求</label>
+      <textarea id="skillRequirements" rows="3" placeholder="描述你希望这个 Skill 做什么，如：&#10;自动化查询库存并导出报表，支持按市场和日期范围筛选"></textarea>
       <label>包含的 API 步骤 <small id="skillStepCount"></small></label>
       <div class="skill-preview" id="skillPreview"></div>
     </div>
     <div class="modal-footer">
+      <button class="tb-btn tb-skill" id="btnSkillGenerate">🚀 生成 Skill</button>
       <button class="tb-btn tb-export" id="btnSkillCopy">📋 复制 Markdown</button>
       <button class="tb-btn tb-save" id="btnSkillDownload">📥 下载 .md</button>
     </div>
+    <div class="modal-status" id="skillGenStatus"></div>
   </div>
 </div>
 

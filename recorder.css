@@ -208,6 +208,21 @@ input.fv:focus, textarea.fv:focus {
   display: flex; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--border);
   justify-content: flex-end;
 }
+.modal-body textarea {
+  width: 100%; padding: 7px 10px; border: 1px solid var(--border);
+  border-radius: 7px; font-size: 12px; outline: none; resize: vertical;
+  font-family: -apple-system, "SF Pro Text", system-ui, sans-serif;
+}
+.modal-body textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,113,227,.08); }
+.modal-status {
+  padding: 10px 20px; font-size: 12px; border-top: 1px solid var(--border);
+  display: none;
+}
+.modal-status.loading { display: block; background: #f0f4ff; color: var(--accent); }
+.modal-status.ok { display: block; background: #e6f4ea; color: var(--green); }
+.modal-status.ok code { background: rgba(0,0,0,.06); padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+.modal-status.ok small { display: block; margin-top: 4px; color: var(--text2); }
+.modal-status.err { display: block; background: #fce8e6; color: var(--red); }
 
 /* ─── Toast ─── */
 #toastContainer { position: fixed; bottom: 20px; right: 20px; z-index: 200; }
