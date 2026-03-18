@@ -17,6 +17,7 @@ export const DEFAULT_SITES = [
     cookies: true,
     localStorage: false,
     lsKeys: [],
+    requiredCookies: ["csrfToken", "oa_user_id", "oa_skey"],
   },
   {
     id: "space",

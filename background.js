@@ -2,7 +2,7 @@ const SERVER_URL = "http://localhost:19222";
 
 const DEFAULT_SITES = [
   { id: "datasuite", name: "DataSuite", url: "https://datasuite.shopee.io", cookies: true, localStorage: false, lsKeys: [] },
-  { id: "wms-data", name: "WMS Data", url: "https://data.ssc.shopeemobile.com", cookies: true, localStorage: false, lsKeys: [] },
+  { id: "wms-data", name: "WMS Data", url: "https://data.ssc.shopeemobile.com", cookies: true, localStorage: false, lsKeys: [], requiredCookies: ["csrfToken", "oa_user_id", "oa_skey"] },
   { id: "space", name: "SPACE", url: "https://space.shopee.io", cookies: true, localStorage: true, lsKeys: ["session"] },
 ];
 
@@ -35,7 +35,16 @@ async function autoSync() {
 
     if (site.cookies) {
       const cookies = await chrome.cookies.getAll({ url: site.url });
+      const cookieNames = new Set(cookies.map((c) => c.name));
       payload.cookies = cookies.map((c) => `${c.name}=${c.value}`).join("; ");
+
+      if (site.requiredCookies?.length) {
+        const missing = site.requiredCookies.filter((k) => !cookieNames.has(k));
+        if (missing.length) {
+          payload.missingCookies = missing;
+          console.warn(`[${site.id}] Missing required cookies: ${missing.join(", ")}. Visit ${site.url} first.`);
+        }
+      }
     }
 
     if (site.localStorage && site.lsKeys?.length) {

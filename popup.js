@@ -4,7 +4,7 @@ const DEFAULT_SITES = [
   { id: "datasuite", name: "DataSuite", url: "https://datasuite.shopee.io",
     cookies: true, localStorage: false, lsKeys: [], cookieValidation: "DATA-SUITE-AUTH-userToken" },
   { id: "wms-data", name: "WMS Data", url: "https://data.ssc.shopeemobile.com",
-    cookies: true, localStorage: false, lsKeys: [] },
+    cookies: true, localStorage: false, lsKeys: [], requiredCookies: ["csrfToken", "oa_user_id", "oa_skey"] },
   { id: "space", name: "SPACE", url: "https://space.shopee.io",
     cookies: true, localStorage: true, lsKeys: ["session"] },
 ];
@@ -100,6 +100,13 @@ async function syncSite(site) {
     const hasAuth = !site.cookieValidation ||
       (payload.cookies && payload.cookies.includes(site.cookieValidation));
 
+    // Check required cookies
+    let missingRequired = [];
+    if (site.requiredCookies?.length && payload.cookies) {
+      const cookieNames = new Set(payload.cookies.split("; ").map((p) => p.split("=")[0]));
+      missingRequired = site.requiredCookies.filter((k) => !cookieNames.has(k));
+    }
+
     const resp = await fetch(`${SERVER_URL}/save`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -112,9 +119,14 @@ async function syncSite(site) {
       let msg = `✅ ${n} cookies`;
       if (ls) msg += ` · ${ls} ls keys`;
       if (site.cookieValidation && !hasAuth) msg += " ⚠ 缺 auth";
+      if (missingRequired.length) msg += ` ⚠ 缺 ${missingRequired.join(", ")}`;
+      const isWarn = (site.cookieValidation && !hasAuth) || missingRequired.length;
       st.textContent = msg;
-      st.className = `site-status show ${hasAuth || !site.cookieValidation ? "ok" : "warn"}`;
-      return true;
+      st.className = `site-status show ${isWarn ? "warn" : "ok"}`;
+      if (missingRequired.length) {
+        st.title = `请先访问 ${site.url} 页面，确保页面已登录加载完毕后再同步`;
+      }
+      return !missingRequired.length;
     }
     st.textContent = `❌ server ${resp.status}`;
     st.className = "site-status err show";
