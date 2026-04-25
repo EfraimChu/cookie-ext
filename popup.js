@@ -1,4 +1,13 @@
 const SERVER_URL = "http://localhost:19222";
+const TOKEN_HEADER = "X-Cert-Keeper-Token";
+
+const DEFAULT_SETTINGS = {
+  syncIntervalMinutes: 10,
+  enforceWorkHours: true,
+  workHours: { startMin: 570, endMin: 1140, weekdaysOnly: true },
+  useNativeMessaging: false,
+  authToken: "",
+};
 
 const DEFAULT_SITES = [
   { id: "datasuite", name: "DataSuite", url: "https://datasuite.shopee.io",
@@ -16,6 +25,17 @@ const SITE_ICONS = {
 };
 
 let sites = [];
+let settings = { ...DEFAULT_SETTINGS };
+
+async function loadSettings() {
+  const { settings: saved } = await chrome.storage.local.get("settings");
+  settings = { ...DEFAULT_SETTINGS, ...(saved || {}) };
+}
+
+async function saveSettings() {
+  await chrome.storage.local.set({ settings });
+}
+
 
 // ───────────────────────────────────────────────────────────────
 // Sites
@@ -121,9 +141,11 @@ async function syncSite(site) {
       missingRequired = site.requiredCookies.filter((k) => !cookieNames.has(k));
     }
 
+    const headers = { "Content-Type": "application/json" };
+    if (settings.authToken) headers[TOKEN_HEADER] = settings.authToken;
     const resp = await fetch(`${SERVER_URL}/save`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(payload),
     });
 
@@ -329,8 +351,45 @@ async function showSyncHint() {
 // Init
 // ───────────────────────────────────────────────────────────────
 
+// ───────────────────────────────────────────────────────────────
+// Settings UI
+// ───────────────────────────────────────────────────────────────
+
+function bindSettingsUI() {
+  const body = document.getElementById("settingsBody");
+  const caret = document.getElementById("settingsCaret");
+  document.getElementById("settingsToggle").addEventListener("click", () => {
+    const open = body.style.display === "block";
+    body.style.display = open ? "none" : "block";
+    caret.textContent = open ? "▾" : "▴";
+  });
+
+  document.getElementById("setEnforceWH").checked = !!settings.enforceWorkHours;
+  document.getElementById("setInterval").value = settings.syncIntervalMinutes;
+  document.getElementById("setNative").checked = !!settings.useNativeMessaging;
+  document.getElementById("setToken").value = settings.authToken || "";
+
+  document.getElementById("btnSettingsSave").addEventListener("click", async () => {
+    settings.enforceWorkHours = document.getElementById("setEnforceWH").checked;
+    settings.syncIntervalMinutes = Math.max(1, Math.min(60, +document.getElementById("setInterval").value || 10));
+    settings.useNativeMessaging = document.getElementById("setNative").checked;
+    settings.authToken = document.getElementById("setToken").value.trim();
+    await saveSettings();
+    document.getElementById("settingsHint").textContent = "✅ 已保存";
+    setTimeout(() => { document.getElementById("settingsHint").textContent = ""; }, 1500);
+  });
+
+  document.getElementById("btnFlushPending").addEventListener("click", async () => {
+    const r = await chrome.runtime.sendMessage({ action: "flushPending" });
+    document.getElementById("settingsHint").textContent =
+      `重传完成: 成功 ${r?.flushed ?? 0}, 仍未送达 ${r?.remaining ?? 0}`;
+  });
+}
+
 (async () => {
+  await loadSettings();
   await loadSites();
+  bindSettingsUI();
   detectTab();
   try {
     const state = await chrome.runtime.sendMessage({ action: "getRecordingState" });
@@ -340,3 +399,4 @@ async function showSyncHint() {
   }
   showSyncHint();
 })();
+

@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+"""cert-keeper – local CLI to manage the credential server and saved sites.
+
+    cert-keeper start                  # run server in foreground
+    cert-keeper start --daemon         # run server in background
+    cert-keeper stop                   # stop the daemonised server
+    cert-keeper status                 # is the server up? what is saved?
+    cert-keeper show <site>            # print saved cookies / paths for a site
+    cert-keeper path <site> [--format] # print path to cookies.txt / cookies.json / storage_state.json
+    cert-keeper token                  # print the current shared token
+    cert-keeper token --reset          # rotate the shared token
+    cert-keeper install-native-host --extension-id <id>
+    cert-keeper install-native-host --extension-id <id> --uninstall
+
+Run ``cert-keeper --help`` for full usage.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+# Make the bundled `server` package importable when invoked directly from the
+# repository checkout (``./cli/cert-keeper``) or after the release zip has been
+# extracted.  We first try the regular import path; if that fails we fall back
+# to the sibling ``server/`` directory next to the script.
+try:
+    from server import auth, cookie_server, install_native_host, storage
+except ImportError:  # pragma: no cover - fallback for direct execution
+    HERE = Path(__file__).resolve().parent
+    sys.path.insert(0, str(HERE.parent))
+    from server import auth, cookie_server, install_native_host, storage  # type: ignore[no-redef]
+
+
+# ---------------------------------------------------------------------------
+# Sub-commands
+# ---------------------------------------------------------------------------
+
+def cmd_start(args: argparse.Namespace) -> int:
+    return cookie_server.main(
+        ["--host", args.host, "--port", str(args.port)]
+        + (["--daemon"] if args.daemon else [])
+        + (["-v"] if args.verbose else [])
+    )
+
+
+def cmd_stop(_: argparse.Namespace) -> int:
+    return cookie_server.main(["--stop"])
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    cookie_server.main(["--status", "--host", args.host, "--port", str(args.port)])
+    sites = storage.list_sites()
+    if not sites:
+        print("no sites saved yet")
+        return 0
+    print(f"\n{'site':<20} {'cookies':>8}  url")
+    for s in sites:
+        print(f"{s['site_id']:<20} {s.get('cookie_count', 0):>8}  {s.get('url', '')}")
+    return 0
+
+
+def cmd_show(args: argparse.Namespace) -> int:
+    site_dir = storage.DEFAULT_BASE_DIR / args.site
+    if not site_dir.exists():
+        print(f"site not found: {args.site}", file=sys.stderr)
+        return 1
+    if args.format == "txt":
+        print((site_dir / "cookies.txt").read_text(encoding="utf-8"))
+    elif args.format == "json":
+        print((site_dir / "cookies.json").read_text(encoding="utf-8"))
+    elif args.format == "storage-state":
+        print((site_dir / "storage_state.json").read_text(encoding="utf-8"))
+    else:
+        info = {
+            "site_id": args.site,
+            "dir": str(site_dir),
+            "cookies_txt": str(site_dir / "cookies.txt"),
+            "cookies_json": str(site_dir / "cookies.json"),
+            "storage_state_json": str(site_dir / "storage_state.json"),
+        }
+        print(json.dumps(info, indent=2))
+    return 0
+
+
+def cmd_path(args: argparse.Namespace) -> int:
+    site_dir = storage.DEFAULT_BASE_DIR / args.site
+    name = {
+        "txt": "cookies.txt",
+        "json": "cookies.json",
+        "storage-state": "storage_state.json",
+    }[args.format]
+    p = site_dir / name
+    if not p.exists():
+        print(f"file missing: {p}", file=sys.stderr)
+        return 1
+    print(p)
+    return 0
+
+
+def cmd_token(args: argparse.Namespace) -> int:
+    token = auth.reset() if args.reset else auth.load_or_create()
+    if args.quiet:
+        print(token)
+    else:
+        print(f"token: {token}")
+        print(f"file:  {auth.TOKEN_FILE}")
+        print(f"header: {auth.HEADER_NAME}")
+    return 0
+
+
+def cmd_install_native_host(args: argparse.Namespace) -> int:
+    return install_native_host.main(
+        ["--extension-id", args.extension_id]
+        + (["--uninstall"] if args.uninstall else [])
+    )
+
+
+# ---------------------------------------------------------------------------
+# Parser
+# ---------------------------------------------------------------------------
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="cert-keeper", description=__doc__.splitlines()[0])
+    sub = p.add_subparsers(dest="command", required=True)
+
+    sp = sub.add_parser("start", help="start the local HTTP server")
+    sp.add_argument("--host", default=cookie_server.DEFAULT_HOST)
+    sp.add_argument("--port", type=int, default=cookie_server.DEFAULT_PORT)
+    sp.add_argument("--daemon", action="store_true")
+    sp.add_argument("-v", "--verbose", action="store_true")
+    sp.set_defaults(func=cmd_start)
+
+    sp = sub.add_parser("stop", help="stop the daemonised server")
+    sp.set_defaults(func=cmd_stop)
+
+    sp = sub.add_parser("status", help="show server status and saved sites")
+    sp.add_argument("--host", default=cookie_server.DEFAULT_HOST)
+    sp.add_argument("--port", type=int, default=cookie_server.DEFAULT_PORT)
+    sp.set_defaults(func=cmd_status)
+
+    sp = sub.add_parser("show", help="print saved data for a site")
+    sp.add_argument("site")
+    sp.add_argument("--format", choices=["info", "txt", "json", "storage-state"], default="info")
+    sp.set_defaults(func=cmd_show)
+
+    sp = sub.add_parser("path", help="print the absolute path to a saved file")
+    sp.add_argument("site")
+    sp.add_argument("--format", choices=["txt", "json", "storage-state"], default="txt")
+    sp.set_defaults(func=cmd_path)
+
+    sp = sub.add_parser("token", help="print or rotate the shared auth token")
+    sp.add_argument("--reset", action="store_true", help="generate a new token")
+    sp.add_argument("-q", "--quiet", action="store_true", help="print only the token value")
+    sp.set_defaults(func=cmd_token)
+
+    sp = sub.add_parser(
+        "install-native-host",
+        help="register the Chrome Native Messaging host manifest",
+    )
+    sp.add_argument("--extension-id", required=True)
+    sp.add_argument("--uninstall", action="store_true")
+    sp.set_defaults(func=cmd_install_native_host)
+
+    return p
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

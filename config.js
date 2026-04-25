@@ -1,5 +1,19 @@
 export const SERVER_URL = "http://localhost:19222";
 
+// Native Messaging host name (must match server/install_native_host.py HOST_NAME).
+export const NATIVE_HOST = "io.shopee.cert_keeper";
+
+// HTTP header carrying the shared local-only auth token.
+export const TOKEN_HEADER = "X-Cert-Keeper-Token";
+
+export const DEFAULT_SETTINGS = {
+  syncIntervalMinutes: 10,
+  enforceWorkHours: true,
+  workHours: { startMin: 570, endMin: 1140, weekdaysOnly: true },
+  useNativeMessaging: false,
+  authToken: "",
+};
+
 export const DEFAULT_SITES = [
   {
     id: "datasuite",

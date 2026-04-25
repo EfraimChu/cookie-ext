@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v3.2.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Sanity-check Python modules
+        run: |
+          python -m py_compile server/*.py
+          python -m py_compile cli/cert-keeper
+
+      - name: Determine version
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            v="${{ github.event.inputs.version }}"
+          else
+            v="${GITHUB_REF#refs/tags/}"
+          fi
+          # Strip leading "v" for the zip filename so it matches the manifest.
+          echo "tag=$v" >> "$GITHUB_OUTPUT"
+          echo "version=${v#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build release zip
+        run: scripts/build.sh --version "${{ steps.ver.outputs.version }}"
+
+      - name: Compute checksum
+        run: |
+          cd dist
+          sha256sum "cert-keeper-${{ steps.ver.outputs.version }}.zip" \
+            > "cert-keeper-${{ steps.ver.outputs.version }}.zip.sha256"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cert-keeper-${{ steps.ver.outputs.version }}
+          path: dist/*
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: ${{ steps.ver.outputs.tag }}
+          generate_release_notes: true
+          files: |
+            dist/cert-keeper-${{ steps.ver.outputs.version }}.zip
+            dist/cert-keeper-${{ steps.ver.outputs.version }}.zip.sha256

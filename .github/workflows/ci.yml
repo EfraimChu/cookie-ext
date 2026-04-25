@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node (for syntax check)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate manifest.json
+        run: python -c "import json; json.load(open('manifest.json'))"
+
+      - name: Compile Python modules
+        run: |
+          python -m py_compile server/*.py
+          python -m py_compile cli/cert-keeper
+
+      - name: Run server tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Syntax-check JS
+        run: |
+          for f in background.js popup.js config.js recorder.js interceptor.js interceptor_bridge.js; do
+            node --check "$f"
+          done
+
+      - name: Build release zip
+        run: scripts/build.sh
