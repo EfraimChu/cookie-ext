@@ -41,5 +41,10 @@ jobs:
             node --check "$f"
           done
 
+      - name: Lint shell scripts
+        run: |
+          sudo apt-get install -y --no-install-recommends shellcheck >/dev/null
+          shellcheck install.sh uninstall.sh scripts/build.sh
+
       - name: Build release zip
         run: scripts/build.sh

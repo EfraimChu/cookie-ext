@@ -52,7 +52,8 @@ cp server/__init__.py server/auth.py server/cookie_server.py \
 cp cli/cert-keeper "$STAGE/cli/"
 chmod +x "$STAGE/cli/cert-keeper"
 
-cp README.md "$STAGE/"
+cp README.md AGENTS.md install.sh uninstall.sh "$STAGE/"
+chmod +x "$STAGE/install.sh" "$STAGE/uninstall.sh"
 
 (cd "$OUT_DIR" && zip -qr "$(basename "$ZIP_PATH")" cert-keeper)
 echo "wrote $ZIP_PATH"
