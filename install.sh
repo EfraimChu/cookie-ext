@@ -46,7 +46,7 @@ fi
 
 PY_VER=$("$PY" -c 'import sys; print("%d.%d" % sys.version_info[:2])')
 case "$PY_VER" in
-  3.[0-8]) die "Python 版本过低（$PY_VER），需要 ≥ 3.9" ;;
+  3.[0-8]) die "Python 版本过低（${PY_VER}），需要 ≥ 3.9" ;;
 esac
 
 c_blue "▶ Cert Keeper 安装器"
@@ -67,7 +67,7 @@ fi
 
 c_blue "▶ 查询 release 信息..."
 release_json=$(curl -fsSL -H 'Accept: application/vnd.github+json' "$api") \
-  || die "无法访问 GitHub API（$api）"
+  || die "无法访问 GitHub API（${api}）"
 
 # 用 Python 解析 JSON，避免依赖 jq
 parsed=$(printf '%s' "$release_json" | "$PY" -c '
@@ -112,7 +112,7 @@ if curl -fsSL -o "$tmp/sum" "$sha_url" 2>/dev/null; then
     actual=""
   fi
   if [ -n "$actual" ]; then
-    [ "$expected" = "$actual" ] || die "SHA-256 校验失败：期望 $expected，实际 $actual"
+    [ "$expected" = "$actual" ] || die "SHA-256 校验失败：期望 ${expected}，实际 $actual"
     c_green "✓ SHA-256 校验通过"
   fi
 fi
