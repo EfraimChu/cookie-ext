@@ -12,7 +12,7 @@
 # 环境变量：
 #   CERT_KEEPER_REPO     默认 EfraimChu/cookie-ext
 #   CERT_KEEPER_VERSION  默认 latest（拉最新 GitHub Release）
-#   CERT_KEEPER_PREFIX   默认 ~/.cert-keeper（解压目录）
+#   CERT_KEEPER_PREFIX   默认 ~/.my-cert（解压目录）
 #   CERT_KEEPER_BIN      默认 ~/.local/bin（软链目录）
 #   CERT_KEEPER_NO_PATH=1  跳过往 shell rc 写 PATH
 #
@@ -22,7 +22,7 @@ set -euo pipefail
 
 REPO="${CERT_KEEPER_REPO:-EfraimChu/cookie-ext}"
 VERSION="${CERT_KEEPER_VERSION:-latest}"
-PREFIX="${CERT_KEEPER_PREFIX:-$HOME/.cert-keeper}"
+PREFIX="${CERT_KEEPER_PREFIX:-$HOME/.my-cert}"
 BIN_DIR="${CERT_KEEPER_BIN:-$HOME/.local/bin}"
 
 c_red()   { printf '\033[31m%s\033[0m\n' "$*"; }

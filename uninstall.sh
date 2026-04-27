@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-PREFIX="${CERT_KEEPER_PREFIX:-$HOME/.cert-keeper}"
+PREFIX="${CERT_KEEPER_PREFIX:-$HOME/.my-cert}"
 BIN_DIR="${CERT_KEEPER_BIN:-$HOME/.local/bin}"
 PURGE="${CERT_KEEPER_PURGE:-0}"
 
@@ -28,10 +28,13 @@ if [ -L "$BIN_DIR/cert-keeper" ] || [ -f "$BIN_DIR/cert-keeper" ]; then
   c_green "✓ 已删除 $BIN_DIR/cert-keeper"
 fi
 
-# 3) 删安装目录
-if [ -d "$PREFIX" ]; then
-  rm -rf "$PREFIX"
-  c_green "✓ 已删除 $PREFIX"
+# 3) 删安装目录（只删程序子目录和版本文件，不删数据目录本身）
+if [ -d "$PREFIX/cert-keeper" ]; then
+  rm -rf "$PREFIX/cert-keeper"
+  c_green "✓ 已删除 $PREFIX/cert-keeper"
+fi
+if [ -f "$PREFIX/.version" ]; then
+  rm -f "$PREFIX/.version"
 fi
 
 # 4) 视情况清理凭据 / Native Messaging manifest

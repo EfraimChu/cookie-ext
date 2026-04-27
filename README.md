@@ -19,7 +19,7 @@ curl -fsSL https://cdn.jsdelivr.net/gh/EfraimChu/cookie-ext@latest/install.sh | 
 
 1. 通过 GitHub Release API 取最新版本；
 2. 下载 `cert-keeper-<version>.zip`，校验 SHA-256；
-3. 解压到 `~/.cert-keeper/cert-keeper/`；
+3. 解压到 `~/.my-cert/cert-keeper/`；
 4. 在 `~/.local/bin/` 创建 `cert-keeper` 软链；
 5. 必要时把 `~/.local/bin` 写入 `.zshrc` / `.bashrc`。
 
@@ -28,7 +28,7 @@ curl -fsSL https://cdn.jsdelivr.net/gh/EfraimChu/cookie-ext@latest/install.sh | 
 | 变量                   | 默认                 | 用途                                |
 | ---------------------- | -------------------- | ----------------------------------- |
 | `CERT_KEEPER_VERSION`  | `latest`             | 装指定版本，例如 `v3.1.0`           |
-| `CERT_KEEPER_PREFIX`   | `~/.cert-keeper`     | 解压目录                            |
+| `CERT_KEEPER_PREFIX`   | `~/.my-cert`         | 解压目录                            |
 | `CERT_KEEPER_BIN`      | `~/.local/bin`       | CLI 软链目录                        |
 | `CERT_KEEPER_NO_PATH`  | -                    | `=1` 跳过自动写 PATH                |
 | `CERT_KEEPER_REPO`     | `EfraimChu/cookie-ext` | 用 fork 时改这里                    |
