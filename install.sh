@@ -41,12 +41,12 @@ if command -v python3 >/dev/null 2>&1; then
 elif command -v python >/dev/null 2>&1; then
   PY=python
 else
-  die "未找到 python3，请先安装 Python ≥ 3.9"
+  die "未找到 python3，请先安装 Python ≥ 3.7"
 fi
 
 PY_VER=$("$PY" -c 'import sys; print("%d.%d" % sys.version_info[:2])')
 case "$PY_VER" in
-  3.[0-8]) die "Python 版本过低（${PY_VER}），需要 ≥ 3.9" ;;
+  3.[0-6]) die "Python 版本过低（${PY_VER}），需要 ≥ 3.7" ;;
 esac
 
 c_blue "▶ Cert Keeper 安装器"
