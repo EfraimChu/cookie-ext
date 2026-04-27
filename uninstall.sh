@@ -33,7 +33,9 @@ if [ -d "$PREFIX/cert-keeper" ]; then
   rm -rf "$PREFIX/cert-keeper"
   c_green "✓ 已删除 $PREFIX/cert-keeper"
 fi
-rm -f "$PREFIX/.version"
+if [ -f "$PREFIX/.version" ]; then
+  rm -f "$PREFIX/.version"
+fi
 
 # 4) 视情况清理凭据 / Native Messaging manifest
 if [ "$PURGE" = "1" ]; then
