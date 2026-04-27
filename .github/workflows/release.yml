@@ -66,3 +66,11 @@ jobs:
           files: |
             dist/cert-keeper-${{ steps.ver.outputs.version }}.zip
             dist/cert-keeper-${{ steps.ver.outputs.version }}.zip.sha256
+
+      - name: Purge jsDelivr @latest cache
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        run: |
+          curl -fsSL "https://purge.jsdelivr.net/gh/EfraimChu/cookie-ext@latest/install.sh" \
+            -o /dev/null -w "jsDelivr purge status: %{http_code}\n" || true
+          curl -fsSL "https://purge.jsdelivr.net/gh/EfraimChu/cookie-ext@latest/uninstall.sh" \
+            -o /dev/null -w "jsDelivr purge status: %{http_code}\n" || true
