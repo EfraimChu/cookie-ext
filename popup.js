@@ -109,16 +109,20 @@ async function getLocalStorage(site) {
   const origin = new URL(site.url).origin;
   const tabs = await chrome.tabs.query({ url: `${origin}/*` });
   if (!tabs.length) return null;
-  const [result] = await chrome.scripting.executeScript({
-    target: { tabId: tabs[0].id },
-    func: (keys) => {
-      const d = {};
-      keys.forEach((k) => { const v = localStorage.getItem(k); if (v !== null) d[k] = v; });
-      return d;
-    },
-    args: [site.lsKeys],
-  });
-  return result?.result || null;
+  try {
+    const [result] = await chrome.scripting.executeScript({
+      target: { tabId: tabs[0].id },
+      func: (keys) => {
+        const d = {};
+        keys.forEach((k) => { const v = localStorage.getItem(k); if (v !== null) d[k] = v; });
+        return d;
+      },
+      args: [site.lsKeys],
+    });
+    return result?.result || null;
+  } catch (_) {
+    return null;
+  }
 }
 
 async function syncSite(site) {
