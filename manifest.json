@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Cert Keeper",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "多站点凭证管理 · API 链路录制 · Skill 构建辅助",
   "permissions": [
     "cookies",

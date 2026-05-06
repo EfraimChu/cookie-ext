@@ -120,7 +120,8 @@ async function getLocalStorage(site) {
       args: [site.lsKeys],
     });
     return result?.result || null;
-  } catch (_) {
+  } catch (e) {
+    console.warn(`[CertKeeper] localStorage inject failed for ${site.id}:`, e.message);
     return null;
   }
 }

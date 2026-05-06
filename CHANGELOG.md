@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.1.1 (2026-05-06)
+
+- 修复：SPACE 等站点 localStorage 注入失败时（"Cannot access contents of the page"）不再中断整体同步，改为静默跳过 localStorage，cookies 正常落盘
+
 ## v3.1.0 (2026-04-25)
 
 首次公开发布。
